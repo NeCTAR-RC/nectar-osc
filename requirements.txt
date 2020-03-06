@@ -1,0 +1,5 @@
+oslo.config
+oslo.utils
+osc-lib
+python-freshdesk
+python-openstackclient
