@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "a607e84f_47af2527",
+        "filename": "setup.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 1000177
+      },
+      "writtenOn": "2020-03-06T05:14:09Z",
+      "side": 1,
+      "message": "there\u0027s something wrong here I don\u0027t get - without .v1 nectar command tree doesn\u0027t exist but with it \"openstack complete\" is broken",
+      "revId": "b4a85680660330a72eac721f859afd02ccab6baf",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    }
+  ]
+}
