@@ -2,6 +2,92 @@
   "comments": [
     {
       "key": {
+        "uuid": "9828b08e_e71640b4",
+        "filename": "nectar_osc/osc/plugin.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-09T22:09:37Z",
+      "side": 1,
+      "message": "I think this could just return None",
+      "range": {
+        "startLine": 36,
+        "startChar": 0,
+        "endLine": 42,
+        "endChar": 17
+      },
+      "revId": "b4a85680660330a72eac721f859afd02ccab6baf",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "8bced478_589f617a",
+        "filename": "nectar_osc/osc/plugin.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-09T22:09:37Z",
+      "side": 1,
+      "message": "can go",
+      "revId": "b4a85680660330a72eac721f859afd02ccab6baf",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "48c819c7_95741247",
+        "filename": "nectar_osc/osc/plugin.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-09T22:09:37Z",
+      "side": 1,
+      "message": "this isn\u0027t needed, just return the parser back",
+      "range": {
+        "startLine": 56,
+        "startChar": 0,
+        "endLine": 61,
+        "endChar": 47
+      },
+      "revId": "b4a85680660330a72eac721f859afd02ccab6baf",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0e2b476b_82a3c688",
+        "filename": "nectar_osc/osc/security.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 117,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-09T22:09:37Z",
+      "side": 1,
+      "message": "these are all common so put them in a parent class",
+      "range": {
+        "startLine": 108,
+        "startChar": 0,
+        "endLine": 117,
+        "endChar": 13
+      },
+      "revId": "b4a85680660330a72eac721f859afd02ccab6baf",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "a607e84f_47af2527",
         "filename": "setup.py",
         "patchSetId": 4
@@ -13,6 +99,52 @@
       "writtenOn": "2020-03-06T05:14:09Z",
       "side": 1,
       "message": "there\u0027s something wrong here I don\u0027t get - without .v1 nectar command tree doesn\u0027t exist but with it \"openstack complete\" is broken",
+      "revId": "b4a85680660330a72eac721f859afd02ccab6baf",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "70659b43_3682a8e9",
+        "filename": "setup.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-09T22:09:37Z",
+      "side": 1,
+      "message": "remove",
+      "range": {
+        "startLine": 45,
+        "startChar": 0,
+        "endLine": 46,
+        "endChar": 48
+      },
+      "revId": "b4a85680660330a72eac721f859afd02ccab6baf",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "30e77b38_b0ddca03",
+        "filename": "test-requirements.txt",
+        "patchSetId": 4
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-09T22:09:37Z",
+      "side": 1,
+      "message": "most of these don\u0027t look required at the moment",
+      "range": {
+        "startLine": 1,
+        "startChar": 0,
+        "endLine": 6,
+        "endChar": 9
+      },
       "revId": "b4a85680660330a72eac721f859afd02ccab6baf",
       "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
       "unresolved": true
