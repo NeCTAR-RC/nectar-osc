@@ -1,0 +1,165 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7db68ff8_9a321f27",
+        "filename": "MANIFEST.in",
+        "patchSetId": 8
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-31T00:37:18Z",
+      "side": 1,
+      "message": "nectar_osc",
+      "range": {
+        "startLine": 3,
+        "startChar": 18,
+        "endLine": 3,
+        "endChar": 28
+      },
+      "revId": "323652c604961bcc88a3ee38eafa92d712b89bee",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "4504806d_47ddc7b2",
+        "filename": "nectar_osc/config.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-31T00:37:18Z",
+      "side": 1,
+      "message": "maybe should be .nectar-osc.conf",
+      "range": {
+        "startLine": 31,
+        "startChar": 35,
+        "endLine": 31,
+        "endChar": 46
+      },
+      "revId": "323652c604961bcc88a3ee38eafa92d712b89bee",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6d34eae1_1a7ec494",
+        "filename": "nectar_osc/freshdesk.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 23,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-31T00:37:18Z",
+      "side": 1,
+      "message": "tidy up indentation here",
+      "range": {
+        "startLine": 20,
+        "startChar": 15,
+        "endLine": 23,
+        "endChar": 38
+      },
+      "revId": "323652c604961bcc88a3ee38eafa92d712b89bee",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "b61af387_aacacaae",
+        "filename": "nectar_osc/network.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-31T00:37:18Z",
+      "side": 1,
+      "message": "I feel this could be renamed to better reflect what it does maybe something like\n\nshow_instance_security_groups(clients, instance_id) ?",
+      "range": {
+        "startLine": 15,
+        "startChar": 4,
+        "endLine": 15,
+        "endChar": 18
+      },
+      "revId": "323652c604961bcc88a3ee38eafa92d712b89bee",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6d6c7c5e_7cc7f7a8",
+        "filename": "nectar_osc/security.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-31T00:37:18Z",
+      "side": 1,
+      "message": "for imports the standard is to do:\n\nimport inbuilts\nspace\nimport third party\nspace\nimport local\n\nso this should be:\n\nimport logging\n\nfrom osc_lib.command import command\nfrom oslo_config import cfg\n\nfrom nectar_osc import compute\nfrom nectar_osc import config\nfrom nectar_osc import freshdesk\nfrom nectar_osc import identity\nfrom nectar_osc import network",
+      "range": {
+        "startLine": 13,
+        "startChar": 0,
+        "endLine": 21,
+        "endChar": 27
+      },
+      "revId": "323652c604961bcc88a3ee38eafa92d712b89bee",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "89adc78f_f2425569",
+        "filename": "nectar_osc/security.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 96,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-31T00:37:18Z",
+      "side": 1,
+      "message": "these all do the same thing?",
+      "range": {
+        "startLine": 94,
+        "startChar": 1,
+        "endLine": 96,
+        "endChar": 59
+      },
+      "revId": "323652c604961bcc88a3ee38eafa92d712b89bee",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a792d4bc_9c0740be",
+        "filename": "setup.py",
+        "patchSetId": 8
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-03-31T00:37:18Z",
+      "side": 1,
+      "message": "Openstack client plugin for misc nectar tooling",
+      "range": {
+        "startLine": 44,
+        "startChar": 18,
+        "endLine": 44,
+        "endChar": 48
+      },
+      "revId": "323652c604961bcc88a3ee38eafa92d712b89bee",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    }
+  ]
+}
