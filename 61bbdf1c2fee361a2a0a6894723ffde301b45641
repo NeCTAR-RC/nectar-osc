@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6b984dba_3d7f4956",
+        "filename": "nectar_osc/config.py",
+        "patchSetId": 11
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 1000077
+      },
+      "writtenOn": "2020-04-01T23:16:26Z",
+      "side": 1,
+      "message": "shouldn\u0027t be required - should default to what our default is now\n\ndef get_freshdesk_config(api_key\u003dNone,\n                         email_config_id\u003d\u00276000071619\u0027,  # support@ehelp.edu.au\n                         group_id\u003d\u00276000208874\u0027,  # Service Notifications group\n                         domain\u003d\u0027dhdnectar.freshdesk.com\u0027):",
+      "range": {
+        "startLine": 21,
+        "startChar": 25,
+        "endLine": 21,
+        "endChar": 38
+      },
+      "revId": "61bbdf1c2fee361a2a0a6894723ffde301b45641",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    }
+  ]
+}

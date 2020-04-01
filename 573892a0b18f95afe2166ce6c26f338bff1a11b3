@@ -94,6 +94,29 @@
     },
     {
       "key": {
+        "uuid": "b972c489_3df276ef",
+        "filename": "nectar_osc/security.py",
+        "patchSetId": 10
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 1000077
+      },
+      "writtenOn": "2020-04-01T23:16:26Z",
+      "side": 1,
+      "message": "could this be more automatic. I\u0027m sure there\u0027s a python function that would give this to you from the actual function name - and them put into the super class",
+      "range": {
+        "startLine": 48,
+        "startChar": 4,
+        "endLine": 48,
+        "endChar": 64
+      },
+      "revId": "573892a0b18f95afe2166ce6c26f338bff1a11b3",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "3e6f8ee4_b2de00b8",
         "filename": "nectar_osc/security.py",
         "patchSetId": 10
