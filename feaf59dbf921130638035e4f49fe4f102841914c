@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "727b7ff3_5b94f6f5",
+        "filename": "nectar_osc/config.py",
+        "patchSetId": 13
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-02T00:40:07Z",
+      "side": 1,
+      "message": "This should go I think too as users might want to run other commands and not have to set up freshdesk. This is enforced at the freshdesk module level anyway so safe to remove here",
+      "range": {
+        "startLine": 18,
+        "startChar": 26,
+        "endLine": 18,
+        "endChar": 39
+      },
+      "revId": "feaf59dbf921130638035e4f49fe4f102841914c",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "61385afc_bcdb6990",
+        "filename": "nectar_osc/freshdesk.py",
+        "patchSetId": 13
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-02T00:40:07Z",
+      "side": 1,
+      "message": "here",
+      "range": {
+        "startLine": 52,
+        "startChar": 4,
+        "endLine": 52,
+        "endChar": 64
+      },
+      "revId": "feaf59dbf921130638035e4f49fe4f102841914c",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    }
+  ]
+}
