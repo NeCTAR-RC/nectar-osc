@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fc058e2f_923e91c3",
+        "filename": "nectar_osc/security.py",
+        "patchSetId": 15
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-02T02:00:59Z",
+      "side": 1,
+      "message": "if not parsed_args.no_dry_run",
+      "range": {
+        "startLine": 69,
+        "startChar": 8,
+        "endLine": 69,
+        "endChar": 43
+      },
+      "revId": "7a2e18d77b7f0afa3287e8d8ef12b7b79f6406c4",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    }
+  ]
+}
