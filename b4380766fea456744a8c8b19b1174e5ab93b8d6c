@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "d6cb66c8_73f498ca",
+        "filename": "requirements.txt",
+        "patchSetId": 17
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1000077
+      },
+      "writtenOn": "2020-04-05T23:43:28Z",
+      "side": 1,
+      "message": "potentially remove this??",
+      "range": {
+        "startLine": 4,
+        "startChar": 0,
+        "endLine": 4,
+        "endChar": 16
+      },
+      "revId": "b4380766fea456744a8c8b19b1174e5ab93b8d6c",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    }
+  ]
+}
