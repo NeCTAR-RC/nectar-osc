@@ -40,7 +40,7 @@ entry_points = {
 
 setup(
     name='nectar-osc',
-    version='0.0.1',
+    version='0.1.0',
     description=('OpenStack client plugin for misc Nectar tooling'),
     author='Adrian Smith',
     author_email='aussieade@gmail.com',
