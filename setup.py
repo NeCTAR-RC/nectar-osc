@@ -33,6 +33,8 @@ entry_points = {
         'nectar security instance lock = nectar_osc.security:LockInstance',
         'nectar security instance unlock = nectar_osc.security:UnlockInstance',
         'nectar security instance delete = nectar_osc.security:DeleteInstance',
+        'nectar instance show = nectar_osc.show:ShowInstance',
+        'nectar instance securitygroups = nectar_osc.show:ShowSecuritygroups',
     ],
     'oslo.config.opts': [
         'nectar_osc = nectar_osc.config:list_opts',
