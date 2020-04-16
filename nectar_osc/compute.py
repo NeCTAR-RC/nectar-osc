@@ -13,6 +13,7 @@
 
 import json
 import six
+import sys
 
 from novaclient import exceptions as n_exc
 from prettytable import PrettyTable
@@ -58,7 +59,8 @@ def show_instance(clients, instance_id, style=None):
     try:
         instance = clients.compute.servers.get(instance_id)
     except n_exc.NotFound:
-        error("Instance {} not found".format(instance_id))
+        print("Instance {} not found".format(instance_id))
+        sys.exit(1)
 
     info = instance._info.copy()
     for network_label, address_list in instance.networks.items():
@@ -68,8 +70,8 @@ def show_instance(clients, instance_id, style=None):
     flavor_id = flavor.get('id', '')
 
     try:
-        info['flavor'] = '%s (%s)' % (clients.compute.flavors.get(flavor_id).name,
-                                      flavor_id)
+        info['flavor'] = '%s (%s)' % (
+            clients.compute.flavors.get(flavor_id).name, flavor_id)
     except Exception:
         info['flavor'] = '%s (%s)' % ("Flavor not found", flavor_id)
 

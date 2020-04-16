@@ -18,6 +18,7 @@ try:
 except ImportError:
     api = None
 
+from nectar_osc import config
 from oslo_config import cfg
 
 
@@ -49,7 +50,11 @@ def get_client():
         '',
         'Only api_key is required in production',
     ])
-    if not CONF.freshdesk.domain and not CONF.freshdesk.api_key:
+
+    res = config.init()
+
+    if not CONF.freshdesk.api_key or res == cfg.ConfigFilesNotFoundError:
         print(msg)
         sys.exit(1)
+
     return api.API(CONF.freshdesk.domain, CONF.freshdesk.api_key)
