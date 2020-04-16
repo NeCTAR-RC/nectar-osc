@@ -15,8 +15,8 @@ import logging
 import sys
 
 from novaclient import exceptions as n_exc
-from oslo_config import cfg
 from osc_lib.command import command
+from oslo_config import cfg
 
 from nectar_osc import compute
 from nectar_osc import freshdesk
@@ -78,7 +78,8 @@ class LockInstance(SecurityCommand):
         # Pause and lock instance
         if not parsed_args.no_dry_run:
             if instance.status != 'ACTIVE':
-                print('Instance state {}, will not pause'.format(instance.status))
+                print('Instance state {}, will not pause'.format(
+                    instance.status))
             else:
                 print('Would pause and lock instance {}'.format(instance.id))
         else:
@@ -103,12 +104,13 @@ class LockInstance(SecurityCommand):
                 print('Would set ticket #{} status to open/urgent'
                       .format(ticket_id))
             else:
-                # Set ticket status=waiting for customer, priority=urgent and reply
+                # Set ticket status, priority and reply
                 print('Replying to ticket with action details')
                 action = 'Instance <b>{} ({})</b> has been <b>paused and '\
                          'locked</b>'.format(instance.name, instance.id)
                 fd.comments.create_reply(ticket_id, action)
-                print('Setting ticket #{} status to open/urgent'.format(ticket_id))
+                print('Setting ticket #{} status to open/urgent'.format(
+                    ticket_id))
                 fd.tickets.update_ticket(ticket_id, status=6, priority=4)
         else:
             project = clients.identity.projects.get(instance.tenant_id)
@@ -131,10 +133,11 @@ class LockInstance(SecurityCommand):
                 '<b>{} ({})</b>'.format(instance.name, instance.id),
                 'in the project <b>{}</b>'.format(project.name),
                 'created by <b>{}</b>'.format(email),
-                'has been involved in a security incident, and has been locked.',
+                'has been involved in a security incident, ',
+                'and has been locked.',
                 '',
-                'We have opened this helpdesk ticket to track the details and ',
-                'the progress of the resolution of this issue.',
+                'We have opened this helpdesk ticket to track the details ',
+                'and the progress of the resolution of this issue.',
                 '',
                 'Please reply to this email if you have any questions or ',
                 'concerns.',
@@ -225,7 +228,8 @@ class UnlockInstance(SecurityCommand):
 
         if instance.status == 'PAUSED':
             if not parsed_args.no_dry_run:
-                print('Would unpause and unlock instance {}'.format(instance.id))
+                print('Would unpause and unlock instance {}'.format(
+                    instance.id))
                 print('Would reply to ticket')
                 print('Would resolve ticket')
             else:
@@ -242,7 +246,8 @@ class UnlockInstance(SecurityCommand):
                 fd.comments.create_reply(ticket_id, action)
 
                 # Set ticket status=resolved
-                print('Setting ticket #{} status to resolved'.format(ticket_id))
+                print('Setting ticket #{} status to resolved'.format(
+                    ticket_id))
                 fd.tickets.update_ticket(ticket_id, status=4)
         else:
             print('Instance {} is not locked, wont unlock'.format(instance.id))

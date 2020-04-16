@@ -29,12 +29,14 @@ requirements = parse_requirements("requirements.txt", session=False)
 entry_points = {
     'openstack.cli.extension':
     ['nectar = nectar_osc.plugin', ],
-    'openstack.nectar.v1':
-    [
+    'openstack.nectar.v1': [
         'nectar security instance lock = nectar_osc.security:LockInstance',
         'nectar security instance unlock = nectar_osc.security:UnlockInstance',
         'nectar security instance delete = nectar_osc.security:DeleteInstance',
-    ]
+    ],
+    'oslo.config.opts': [
+        'nectar_osc = nectar_osc.config:list_opts',
+    ],
 }
 
 

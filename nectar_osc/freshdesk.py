@@ -18,6 +18,7 @@ try:
 except ImportError:
     api = None
 
+from nectar_osc import config
 from oslo_config import cfg
 
 
@@ -32,7 +33,7 @@ def get_client():
         sys.exit(1)
 
     msg = '\n'.join([
-        'No Freshdesk details found in your config file.',
+        'No Freshdesk api key found in your config file.',
         '',
         'To find your Freshdesk API key by following the guide here:',
         'https://support.freshdesk.com/support/solutions/'
@@ -43,13 +44,12 @@ def get_client():
         '',
         '  [freshdesk]',
         '  api_key = <your api key>',
-        '  email_config_id = <id>',
-        '  group_id = <id>',
-        '  domain = <domainname>',
-        '',
-        'Only api_key is required in production',
     ])
-    if not CONF.freshdesk.domain and not CONF.freshdesk.api_key:
+
+    config.init()
+
+    if not CONF.freshdesk.api_key:
         print(msg)
         sys.exit(1)
+
     return api.API(CONF.freshdesk.domain, CONF.freshdesk.api_key)
