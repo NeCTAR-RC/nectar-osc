@@ -26,5 +26,8 @@ cfg.CONF.register_opts(freshdesk_opts, group='freshdesk')
 
 
 def init():
-    cfg.CONF([], project='nectar-osc',
-         default_config_files=['~/.nectar-osc.conf'])
+    try:
+        cfg.CONF([], project='nectar-osc',
+            default_config_files=['~/.nectar-osc.conf'])
+    except cfg.ConfigFilesNotFoundError:
+        pass

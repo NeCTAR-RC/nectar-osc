@@ -49,7 +49,7 @@ def get_client():
         '',
         'Only api_key is required in production',
     ])
-    if not CONF.freshdesk.domain and not CONF.freshdesk.api_key:
+    if not CONF.freshdesk.api_key:
         print(msg)
         sys.exit(1)
     return api.API(CONF.freshdesk.domain, CONF.freshdesk.api_key)
