@@ -11,18 +11,6 @@
 #   under the License.
 #
 
-import sys
-
-from nectar_osc import config
-
-
-try:
-    # Initialise config
-    config.init()
-except Exception as e:
-    print(e)
-    sys.exit(1)
-
 
 DEFAULT_API_VERSION = '1'
 
