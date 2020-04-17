@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f7a5a2bd_13c0160f",
+        "filename": "nectar_osc/config.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-17T01:25:06Z",
+      "side": 1,
+      "message": "keep this what it was",
+      "range": {
+        "startLine": 28,
+        "startChar": 1,
+        "endLine": 32,
+        "endChar": 17
+      },
+      "revId": "4ff69e0c98ae94539109af0f85e3c987563ee412",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "0b79ebad_3775604c",
+        "filename": "nectar_osc/freshdesk.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-17T01:25:06Z",
+      "side": 1,
+      "message": "just change this to `config.init()`",
+      "range": {
+        "startLine": 54,
+        "startChar": 4,
+        "endLine": 54,
+        "endChar": 23
+      },
+      "revId": "4ff69e0c98ae94539109af0f85e3c987563ee412",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "a2eb8787_6e26cdfc",
+        "filename": "nectar_osc/freshdesk.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-17T01:25:06Z",
+      "side": 1,
+      "message": "keep this what it was",
+      "range": {
+        "startLine": 56,
+        "startChar": 4,
+        "endLine": 56,
+        "endChar": 73
+      },
+      "revId": "4ff69e0c98ae94539109af0f85e3c987563ee412",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    }
+  ]
+}
