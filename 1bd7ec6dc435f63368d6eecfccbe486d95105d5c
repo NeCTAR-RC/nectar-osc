@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "b48072f7_36b35a81",
+        "filename": "nectar_osc/show.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-20T23:02:50Z",
+      "side": 1,
+      "message": "server",
+      "range": {
+        "startLine": 31,
+        "startChar": 22,
+        "endLine": 31,
+        "endChar": 33
+      },
+      "revId": "1bd7ec6dc435f63368d6eecfccbe486d95105d5c",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "6846ead2_91310c42",
+        "filename": "nectar_osc/show.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-20T23:02:50Z",
+      "side": 1,
+      "message": "Server (name or ID)",
+      "range": {
+        "startLine": 32,
+        "startChar": 19,
+        "endLine": 32,
+        "endChar": 32
+      },
+      "revId": "1bd7ec6dc435f63368d6eecfccbe486d95105d5c",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "14c1e932_54e558e0",
+        "filename": "setup.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 36,
+      "author": {
+        "id": 1000000
+      },
+      "writtenOn": "2020-04-20T23:02:50Z",
+      "side": 1,
+      "message": "think this should be server to be consistent to openstack client",
+      "range": {
+        "startLine": 36,
+        "startChar": 16,
+        "endLine": 36,
+        "endChar": 24
+      },
+      "revId": "1bd7ec6dc435f63368d6eecfccbe486d95105d5c",
+      "serverId": "f182a8af-62ca-4ceb-ab81-14f8fec9c6c5",
+      "unresolved": true
+    }
+  ]
+}
