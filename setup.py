@@ -26,6 +26,12 @@ except ImportError:  # for pip <= 9.0.3
 
 requirements = parse_requirements("requirements.txt", session=False)
 
+try:
+    requirements = [str(r.requirement) for r in requirements]
+except AttributeError:
+    requirements = [str(r.req) for r in requirements]
+
+
 entry_points = {
     'openstack.cli.extension':
     ['nectar = nectar_osc.plugin', ],
@@ -44,7 +50,7 @@ entry_points = {
 
 setup(
     name='nectar-osc',
-    version='0.1.0',
+    version='0.2.0',
     description=('OpenStack client plugin for misc Nectar tooling'),
     author='Adrian Smith',
     author_email='aussieade@gmail.com',
@@ -53,7 +59,7 @@ setup(
         'nectar_osc',
     ],
     include_package_data=True,
-    install_requires=[str(r.req) for r in requirements],
+    install_requires=requirements,
     license="Apache",
     zip_safe=False,
     classifiers=(
