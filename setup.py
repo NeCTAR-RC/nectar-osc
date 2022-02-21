@@ -28,6 +28,7 @@ entry_points = {
         'nectar security instance delete = nectar_osc.security:DeleteInstance',
         'nectar server show = nectar_osc.show:ShowInstance',
         'nectar server securitygroups = nectar_osc.show:ShowSecuritygroups',
+        'nectar flavor list = nectar_osc.rating:ListFlavors',
     ],
     'oslo.config.opts': [
         'nectar_osc = nectar_osc.config:list_opts',
@@ -37,7 +38,7 @@ entry_points = {
 
 setup(
     name='nectar-osc',
-    version='0.2.0',
+    version='0.3.0',
     description=('OpenStack client plugin for misc Nectar tooling'),
     author='Adrian Smith',
     author_email='aussieade@gmail.com',
