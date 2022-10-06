@@ -119,7 +119,7 @@ class LockInstance(SecurityCommand):
             name = getattr(user, 'full_name', email)
             cc_emails = identity.get_tenant_managers_emails(clients.identity,
                                                             instance)
-            if(parsed_args.cc):
+            if (parsed_args.cc):
                 cc_emails.append(parsed_args.cc)
 
             # Create ticket if none exist, and add instance info
