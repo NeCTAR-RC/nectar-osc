@@ -72,45 +72,42 @@ class LockInstance(SecurityCommand):
         try:
             instance = clients.compute.servers.get(parsed_args.id)
         except n_exc.NotFound:
-            print('Instance {} not found'.format(parsed_args.id))
+            print(f'Instance {parsed_args.id} not found')
             sys.exit(1)
 
         # Pause and lock instance
         if not parsed_args.no_dry_run:
             if instance.status != 'ACTIVE':
-                print('Instance state {}, will not pause'.format(
-                    instance.status))
+                print(f'Instance state {instance.status}, will not pause')
             else:
-                print('Would pause and lock instance {}'.format(instance.id))
+                print(f'Would pause and lock instance {instance.id}')
         else:
             if instance.status != 'ACTIVE':
-                print('Instance not in ACTIVE state ({}), skipping'
-                      .format(instance.status))
+                print(f'Instance not in ACTIVE state ({instance.status}), '
+                      'skipping')
             else:
-                print('Pausing instance {}'.format(instance.id))
+                print(f'Pausing instance {instance.id}')
                 instance.pause()
 
-            print('Locking instance {}'.format(instance.id))
+            print(f'Locking instance {instance.id}')
             instance.lock()
 
         # Process ticket
         ticket_id = None
         ticket_url = instance.metadata.get('security_ticket')
         if ticket_url:
-            print('Found existing ticket: {}'.format(ticket_url))
+            print(f'Found existing ticket: {ticket_url}')
             ticket_id = int(ticket_url.split('/')[-1])
 
             if not parsed_args.no_dry_run:
-                print('Would set ticket #{} status to open/urgent'
-                      .format(ticket_id))
+                print(f'Would set ticket #{ticket_id} status to open/urgent')
             else:
                 # Set ticket status, priority and reply
                 print('Replying to ticket with action details')
-                action = 'Instance <b>{} ({})</b> has been <b>paused and '\
-                         'locked</b>'.format(instance.name, instance.id)
+                action = f'Instance <b>{instance.name} ({instance.id})</b>' \
+                    ' has been <b>paused and ''locked</b>'
                 fd.comments.create_reply(ticket_id, action)
-                print('Setting ticket #{} status to open/urgent'.format(
-                    ticket_id))
+                print(f'Setting ticket #{ticket_id} status to open/urgent')
                 fd.tickets.update_ticket(ticket_id, status=6, priority=4)
         else:
             project = clients.identity.projects.get(instance.tenant_id)
@@ -123,16 +120,16 @@ class LockInstance(SecurityCommand):
                 cc_emails.append(parsed_args.cc)
 
             # Create ticket if none exist, and add instance info
-            subject = 'Security incident for instance {} ({})'.format(
-                instance.name, instance.id)
+            subject = f'Security incident for instance {instance.name} ' \
+                f'({instance.id})'
             body = '<br />\n'.join([
                 'Dear Nectar Research Cloud User, ',
                 '',
                 '',
                 'We have reason to believe that cloud instance: '
-                '<b>{} ({})</b>'.format(instance.name, instance.id),
-                'in the project <b>{}</b>'.format(project.name),
-                'created by <b>{}</b>'.format(email),
+                f'<b>{instance.name} ({instance.id})</b>',
+                f'in the project <b>{project.name}</b>',
+                f'created by <b>{email}</b>',
                 'has been involved in a security incident, ',
                 'and has been locked.',
                 '',
@@ -148,9 +145,9 @@ class LockInstance(SecurityCommand):
 
             if not parsed_args.no_dry_run:
                 print('Would create ticket with details:')
-                print('  To:      {} <{}>'.format(name, email))
-                print('  CC:      {}'.format(', '.join(cc_emails)))
-                print('  Subject: {}'.format(subject))
+                print(f'  To:      {name} <{email}>')
+                print(f'  CC:      {", ".join(cc_emails)}')
+                print(f'  Subject: {subject}')
 
                 print('Would add instance details to ticket:')
                 print(compute.show_instance(clients, instance.id))
@@ -177,13 +174,12 @@ class LockInstance(SecurityCommand):
                 else:
                     domain = fd.domain
 
-                ticket_url = 'https://{}/helpdesk/tickets/{}'\
-                             .format(domain, ticket_id)
+                ticket_url = \
+                    f'https://{domain}/helpdesk/tickets/{ticket_id}'
                 clients.compute.servers.set_meta(instance.id,
                                                  {'security_ticket':
                                                   ticket_url})
-                print('Ticket #{} has been created: {}'
-                      .format(ticket_id, ticket_url))
+                print(f'Ticket #{ticket_id} has been created: {ticket_url}')
 
                 # Add a private note with instance details
                 print('Adding instance information to ticket')
@@ -213,13 +209,13 @@ class UnlockInstance(SecurityCommand):
         try:
             instance = clients.compute.servers.get(parsed_args.id)
         except n_exc.NotFound:
-            print('Instance {} not found'.format(parsed_args.id))
+            print(f'Instance {parsed_args.id} not found')
             sys.exit(1)
 
         ticket_id = None
         ticket_url = instance.metadata.get('security_ticket')
         if ticket_url:
-            print('Found ticket: {}'.format(ticket_url))
+            print(f'Found ticket: {ticket_url}')
             ticket_id = int(ticket_url.split('/')[-1])
         else:
             if parsed_args.no_dry_run is True:
@@ -228,29 +224,27 @@ class UnlockInstance(SecurityCommand):
 
         if instance.status == 'PAUSED':
             if not parsed_args.no_dry_run:
-                print('Would unpause and unlock instance {}'.format(
-                    instance.id))
+                print(f'Would unpause and unlock instance {instance.id}')
                 print('Would reply to ticket')
                 print('Would resolve ticket')
             else:
-                print('Unpausing instance {}'.format(instance.id))
+                print(f'Unpausing instance {instance.id}')
                 instance.unpause()
 
-                print('Unlocking instance {}'.format(instance.id))
+                print(f'Unlocking instance {instance.id}')
                 instance.unlock()
 
                 # Add reply to user
                 print('Replying to ticket with action details')
-                action = 'Instance <b>{} ({})</b> has been <b>unpaused and '\
-                         'unlocked</b>'.format(instance.name, instance.id)
+                action = f'Instance <b>{instance.name} ({instance.id})</b>' \
+                    ' has been <b>unpaused and unlocked</b>'
                 fd.comments.create_reply(ticket_id, action)
 
                 # Set ticket status=resolved
-                print('Setting ticket #{} status to resolved'.format(
-                    ticket_id))
+                print(f'Setting ticket #{ticket_id} status to resolved')
                 fd.tickets.update_ticket(ticket_id, status=4)
         else:
-            print('Instance {} is not locked, wont unlock'.format(instance.id))
+            print(f"Instance {ticket_id} is not locked, won't unlock")
 
 
 class DeleteInstance(SecurityCommand):
@@ -271,13 +265,13 @@ class DeleteInstance(SecurityCommand):
         try:
             instance = clients.compute.servers.get(parsed_args.id)
         except n_exc.NotFound:
-            print('Instance {} not found'.format(parsed_args.id))
+            print(f'Instance {parsed_args.id} not found')
             sys.exit(1)
 
         ticket_id = None
         ticket_url = instance.metadata.get('security_ticket')
         if ticket_url:
-            print('Found ticket: {}'.format(ticket_url))
+            print(f'Found ticket: {ticket_url}')
             ticket_id = int(ticket_url.split('/')[-1])
         else:
             if parsed_args.no_dry_run is True:
@@ -287,21 +281,21 @@ class DeleteInstance(SecurityCommand):
         # DELETE!!!
         if instance.status == 'PAUSED':
             if not parsed_args.no_dry_run:
-                print('Would delete instance {}'.format(instance.id))
+                print(f'Would delete instance {instance.id}')
                 print('Would reply to ticket')
                 print('Would resolve ticket')
             else:
-                print('Deleting instance {})'.format(instance.id))
+                print(f'Deleting instance {instance.id})')
                 instance.delete()
 
                 # Add reply to user
                 print('Updating ticket with action')
-                action = 'Instance <b>{} ({})</b> has been <b>deleted.</b>'\
-                         .format(instance.name, instance.id)
+                action = f'Instance <b>{instance.name} ({instance.id})</b>' \
+                      ' has been <b>deleted.</b>'
                 fd.comments.create_reply(ticket_id, action)
 
                 # Set ticket status=resolved
-                print('Resolving ticket #{}'.format(ticket_id))
+                print(f'Resolving ticket #{ticket_id}')
                 fd.tickets.update_ticket(ticket_id, status=4)
         else:
-            print('Instance {} is not locked, wont delete'.format(instance.id))
+            print(f"Instance {instance.id} is not locked, won't delete")
