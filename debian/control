@@ -3,7 +3,7 @@ Section: unknown
 Priority: optional
 Maintainer: Sam Morrison <sorrison@gmail.com>
 Build-Depends:
- debhelper-compat (= 13),
+ debhelper (>= 12),
  dh-python,
  openstack-pkg-tools,
  python3-all (>=3.2),
