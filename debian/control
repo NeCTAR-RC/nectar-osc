@@ -10,6 +10,9 @@ Build-Depends:
  python3-pbr,
  python3-setuptools,
  python3-sphinx,
+ python3-stestr (>= 2.0.0),
+ python3-subunit (>= 1.0.0),
+ subunit,
 Standards-Version: 4.6.1
 Homepage: https://github.com/NeCTAR-RC/python-nectar-osc
 
