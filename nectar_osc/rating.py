@@ -27,11 +27,9 @@ class ListFlavors(command.Lister):
     log = logging.getLogger(__name__ + '.ListFlavors')
 
     def get_parser(self, prog_name):
-        parser = super(ListFlavors, self).get_parser(prog_name)
+        parser = super().get_parser(prog_name)
         parser.add_argument(
-            '--all',
-            action='store_true',
-            help=('Display All flavors')
+            '--all', action='store_true', help=('Display All flavors')
         )
         return parser
 
@@ -50,12 +48,13 @@ class ListFlavors(command.Lister):
                 group_id = g.get('group_id')
                 break
         mappings = rating_client.rating.hashmap.get_group_mappings(
-            group_id=group_id)['mappings']
+            group_id=group_id
+        )['mappings']
         mappings = {m.get('value'): m.get('cost') for m in mappings}
         for f in flavors:
             f.rate = mappings.get(f.id)
         columns = ['id', 'name', 'rate']
         return (
             columns,
-            (osc_utils.get_item_properties(f, columns) for f in flavors)
+            (osc_utils.get_item_properties(f, columns) for f in flavors),
         )

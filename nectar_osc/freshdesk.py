@@ -27,24 +27,28 @@ CONF = cfg.CONF
 
 def get_client():
     if not api:
-        print("To use this tool, you will need to also install the"
-              "python-freshdesk package: \n"
-              "  $ pip install python-freshdesk")
+        print(
+            "To use this tool, you will need to also install the"
+            "python-freshdesk package: \n"
+            "  $ pip install python-freshdesk"
+        )
         sys.exit(1)
 
-    msg = '\n'.join([
-        'No Freshdesk api key found in your config file.',
-        '',
-        'To find your Freshdesk API key by following the guide here:',
-        'https://support.freshdesk.com/support/solutions/'
-        'articles/215517-how-to-find-your-api-key',
-        '',
-        'Then add the following config to your configuration',
-        'file (~/.nectar-osc.conf):',
-        '',
-        '  [freshdesk]',
-        '  api_key = <your api key>',
-    ])
+    msg = '\n'.join(
+        [
+            'No Freshdesk api key found in your config file.',
+            '',
+            'To find your Freshdesk API key by following the guide here:',
+            'https://support.freshdesk.com/support/solutions/'
+            'articles/215517-how-to-find-your-api-key',
+            '',
+            'Then add the following config to your configuration',
+            'file (~/.nectar-osc.conf):',
+            '',
+            '  [freshdesk]',
+            '  api_key = <your api key>',
+        ]
+    )
 
     config.init()
 

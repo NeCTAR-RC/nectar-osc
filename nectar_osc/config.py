@@ -20,18 +20,21 @@ from pathlib import Path
 
 homedir = str(Path.home())
 if not Path(homedir).exists():
-    print('config dir {} doesnt exist'.format(homedir))
+    print(f'config dir {homedir} doesnt exist')
     sys.exit(1)
 
 
 freshdesk_opts = [
     cfg.StrOpt('api_key', help='your freshdesk api key'),
-    cfg.IntOpt('email_config_id', default='6000071619',
-               help='freshdesk email config id'),
-    cfg.IntOpt('group_id', default='6000208874',
-               help='freshdesk group id'),
-    cfg.StrOpt('domain', default='dhdnectar.freshdesk.com',
-               help='freshdesk domain'),
+    cfg.IntOpt(
+        'email_config_id',
+        default='6000071619',
+        help='freshdesk email config id',
+    ),
+    cfg.IntOpt('group_id', default='6000208874', help='freshdesk group id'),
+    cfg.StrOpt(
+        'domain', default='dhdnectar.freshdesk.com', help='freshdesk domain'
+    ),
 ]
 
 cfg.CONF.register_opts(freshdesk_opts, group='freshdesk')
@@ -45,8 +48,11 @@ def list_opts():
 
 def init():
     try:
-        cfg.CONF([], project='nectar-osc',
-            default_config_files=['~/.nectar-osc.conf'])
+        cfg.CONF(
+            [],
+            project='nectar-osc',
+            default_config_files=['~/.nectar-osc.conf'],
+        )
     except cfg.ConfigFilesNotFoundError:
         print('generating config file ~/.nectar-osc.conf')
         conf = cfg.ConfigOpts()

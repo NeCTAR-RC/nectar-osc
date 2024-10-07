@@ -45,10 +45,12 @@ def _format_instance(d, style=None):
 
     if style == 'html':
         output = '<b>Instance details</b>'
-        output += pt.get_html_string(attributes={
-            'border': 1,
-            'style': 'border-width: 1px; border-collapse: collapse;'
-        })
+        output += pt.get_html_string(
+            attributes={
+                'border': 1,
+                'style': 'border-width: 1px; border-collapse: collapse;',
+            }
+        )
     else:
         output = 'Instance details:\n'
         output += pt.get_string()
@@ -59,21 +61,22 @@ def show_instance(clients, instance_id, style=None):
     try:
         instance = clients.compute.servers.get(instance_id)
     except n_exc.NotFound:
-        print("Instance {} not found".format(instance_id))
+        print(f"Instance {instance_id} not found")
         sys.exit(1)
 
     info = instance._info.copy()
     for network_label, address_list in instance.networks.items():
-        info['%s network' % network_label] = ', '.join(address_list)
+        info[f'{network_label} network'] = ', '.join(address_list)
 
     flavor = info.get('flavor', {})
     flavor_id = flavor.get('id', '')
 
     try:
-        info['flavor'] = '%s (%s)' % (
-            clients.compute.flavors.get(flavor_id).name, flavor_id)
+        info['flavor'] = (
+            f'{clients.compute.flavors.get(flavor_id).name} ({flavor_id})'
+        )
     except Exception:
-        info['flavor'] = '%s (%s)' % ("Flavor not found", flavor_id)
+        info['flavor'] = '{} ({})'.format("Flavor not found", flavor_id)
 
     # Image
     image = info.get('image', {})
@@ -82,10 +85,11 @@ def show_instance(clients, instance_id, style=None):
         try:
             img = clients.image.images.get(image_id)
             nectar_build = img.get('nectar_build', 'N/A')
-            info['image'] = ('%s (%s, NeCTAR Build %s)'
-                             % (img.name, img.id, nectar_build))
+            info['image'] = (
+                f'{img.name} ({img.id}, NeCTAR Build {nectar_build})'
+            )
         except Exception:
-            info['image'] = 'Image not found (%s)' % image_id
+            info['image'] = f'Image not found ({image_id})'
 
     else:  # Booted from volume
         info['image'] = "Attempt to boot from volume - no image supplied"
@@ -95,7 +99,7 @@ def show_instance(clients, instance_id, style=None):
     if project_id:
         try:
             project = clients.identity.projects.get(project_id)
-            info['tenant_id'] = '%s (%s)' % (project.name, project.id)
+            info['tenant_id'] = f'{project.name} ({project.id})'
         except Exception:
             pass
 
@@ -104,7 +108,7 @@ def show_instance(clients, instance_id, style=None):
     if user_id:
         try:
             user = clients.identity.users.get(user_id)
-            info['user_id'] = '%s (%s)' % (user.name, user.id)
+            info['user_id'] = f'{user.name} ({user.id})'
         except Exception:
             pass
 

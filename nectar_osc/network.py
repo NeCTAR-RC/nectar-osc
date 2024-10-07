@@ -18,9 +18,9 @@ from neutronclient.v2_0 import client as nclient
 
 def _get_sg_remote(rule):
     if rule['remote_ip_prefix']:
-        remote = '%s (CIDR)' % rule['remote_ip_prefix']
+        remote = '{} (CIDR)'.format(rule['remote_ip_prefix'])
     elif rule['remote_group_id']:
-        remote = '%s (group)' % rule['remote_group_id']
+        remote = '{} (group)'.format(rule['remote_group_id'])
     else:
         remote = None
     return remote
@@ -31,21 +31,21 @@ def _get_sg_protocol_port(rule):
     port_min = rule['port_range_min']
     port_max = rule['port_range_max']
     if proto in ('tcp', 'udp'):
-        if (port_min and port_min == port_max):
-            protocol_port = '%s/%s' % (port_min, proto)
+        if port_min and port_min == port_max:
+            protocol_port = f'{port_min}/{proto}'
         elif port_min:
-            protocol_port = '%s-%s/%s' % (port_min, port_max, proto)
+            protocol_port = f'{port_min}-{port_max}/{proto}'
         else:
             protocol_port = proto
     elif proto == 'icmp':
         icmp_opts = []
         if port_min is not None:
-            icmp_opts.append('type:%s' % port_min)
+            icmp_opts.append(f'type:{port_min}')
         if port_max is not None:
-            icmp_opts.append('code:%s' % port_max)
+            icmp_opts.append(f'code:{port_max}')
 
         if icmp_opts:
-            protocol_port = 'icmp (%s)' % ', '.join(icmp_opts)
+            protocol_port = 'icmp ({})'.format(', '.join(icmp_opts))
         else:
             protocol_port = 'icmp'
     elif proto is not None:
@@ -59,11 +59,13 @@ def _get_sg_protocol_port(rule):
 
 def _format_sg_rule(rule):
     formatted = []
-    for field in ['direction',
-                  'ethertype',
-                  ('protocol_port', _get_sg_protocol_port),
-                  'remote_ip_prefix',
-                  'remote_group_id']:
+    for field in [
+        'direction',
+        'ethertype',
+        ('protocol_port', _get_sg_protocol_port),
+        'remote_ip_prefix',
+        'remote_group_id',
+    ]:
         if isinstance(field, tuple):
             field, get_method = field
             data = get_method(rule)
@@ -72,15 +74,21 @@ def _format_sg_rule(rule):
         if not data:
             continue
         if field in ('remote_ip_prefix', 'remote_group_id'):
-            data = '%s: %s' % (field, data)
+            data = f'{field}: {data}'
         formatted.append(data)
     return ', '.join(formatted)
 
 
 def _format_sg_rules(secgroup):
     try:
-        return '\n'.join(sorted([_format_sg_rule(rule) for rule
-                                 in secgroup['security_group_rules']]))
+        return '\n'.join(
+            sorted(
+                [
+                    _format_sg_rule(rule)
+                    for rule in secgroup['security_group_rules']
+                ]
+            )
+        )
     except Exception:
         return ''
 
@@ -90,15 +98,16 @@ def _format_secgroups(security_groups, style=None):
     pt.align = 'l'
 
     for sg in security_groups['security_groups']:
-        pt.add_row([sg['id'], sg['name'],
-                    _format_sg_rules(sg)])
+        pt.add_row([sg['id'], sg['name'], _format_sg_rules(sg)])
 
     if style == 'html':
         output = '<b>Security Groups</b>'
-        output += pt.get_html_string(attributes={
-            'border': 1,
-            'style': 'border-width: 1px; border-collapse: collapse;'
-        })
+        output += pt.get_html_string(
+            attributes={
+                'border': 1,
+                'style': 'border-width: 1px; border-collapse: collapse;',
+            }
+        )
     else:
         output = 'Security Groups:\n'
         output += pt.get_string()
@@ -106,12 +115,14 @@ def _format_secgroups(security_groups, style=None):
 
 
 def show_instance_security_groups(clients, instance_id, style=None):
-
     nc = nclient.Client(session=clients.session)
 
     ports = nc.list_ports(device_id=instance_id)
-    sg_ids = [sg for sgs in [p['security_groups']
-              for p in ports['ports']] for sg in sgs]
+    sg_ids = [
+        sg
+        for sgs in [p['security_groups'] for p in ports['ports']]
+        for sg in sgs
+    ]
     security_groups = nc.list_security_groups(id=sg_ids)
 
     return _format_secgroups(security_groups, style=style)

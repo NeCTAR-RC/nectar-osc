@@ -33,15 +33,11 @@ class SecurityCommand(command.Command):
     def get_parser(self, prog_name):
         parser = super().get_parser(prog_name)
         parser.add_argument(
-            '--no-dry-run',
-            action='store_true',
-            help=('Really perform action')
+            '--no-dry-run', action='store_true', help=('Really perform action')
         )
         parser.add_argument(
-            'id',
-            metavar='<instance_id>',
-            help=('Instance uuid')
-            )
+            'id', metavar='<instance_id>', help=('Instance uuid')
+        )
 
         return parser
 
@@ -56,8 +52,8 @@ class LockInstance(SecurityCommand):
         parser.add_argument(
             '--cc',
             metavar='<email>',
-            help=('Extra email address to add to cc list')
-            )
+            help=('Extra email address to add to cc list'),
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -83,8 +79,10 @@ class LockInstance(SecurityCommand):
                 print(f'Would pause and lock instance {instance.id}')
         else:
             if instance.status != 'ACTIVE':
-                print(f'Instance not in ACTIVE state ({instance.status}), '
-                      'skipping')
+                print(
+                    f'Instance not in ACTIVE state ({instance.status}), '
+                    'skipping'
+                )
             else:
                 print(f'Pausing instance {instance.id}')
                 instance.pause()
@@ -104,8 +102,11 @@ class LockInstance(SecurityCommand):
             else:
                 # Set ticket status, priority and reply
                 print('Replying to ticket with action details')
-                action = f'Instance <b>{instance.name} ({instance.id})</b>' \
-                    ' has been <b>paused and ''locked</b>'
+                action = (
+                    f'Instance <b>{instance.name} ({instance.id})</b>'
+                    ' has been <b>paused and '
+                    'locked</b>'
+                )
                 fd.comments.create_reply(ticket_id, action)
                 print(f'Setting ticket #{ticket_id} status to open/urgent')
                 fd.tickets.update_ticket(ticket_id, status=6, priority=4)
@@ -114,34 +115,40 @@ class LockInstance(SecurityCommand):
             user = clients.identity.users.get(instance.user_id)
             email = user.email or 'no-reply@nectar.org.au'
             name = getattr(user, 'full_name', email)
-            cc_emails = identity.get_tenant_managers_emails(clients.identity,
-                                                            instance)
-            if (parsed_args.cc):
+            cc_emails = identity.get_tenant_managers_emails(
+                clients.identity, instance
+            )
+            if parsed_args.cc:
                 cc_emails.append(parsed_args.cc)
 
             # Create ticket if none exist, and add instance info
-            subject = f'Security incident for instance {instance.name} ' \
+            subject = (
+                f'Security incident for instance {instance.name} '
                 f'({instance.id})'
-            body = '<br />\n'.join([
-                'Dear Nectar Research Cloud User, ',
-                '',
-                '',
-                'We have reason to believe that cloud instance: '
-                f'<b>{instance.name} ({instance.id})</b>',
-                f'in the project <b>{project.name}</b>',
-                f'created by <b>{email}</b>',
-                'has been involved in a security incident, ',
-                'and has been locked.',
-                '',
-                'We have opened this helpdesk ticket to track the details ',
-                'and the progress of the resolution of this issue.',
-                '',
-                'Please reply to this email if you have any questions or ',
-                'concerns.',
-                '',
-                'Thanks, ',
-                'Nectar Research Cloud Team'
-            ])
+            )
+            body = '<br />\n'.join(
+                [
+                    'Dear Nectar Research Cloud User, ',
+                    '',
+                    '',
+                    'We have reason to believe that cloud instance: '
+                    f'<b>{instance.name} ({instance.id})</b>',
+                    f'in the project <b>{project.name}</b>',
+                    f'created by <b>{email}</b>',
+                    'has been involved in a security incident, ',
+                    'and has been locked.',
+                    '',
+                    'We have opened this helpdesk ticket to track the ',
+                    'details and the progress of the resolution of this ',
+                    'issue.',
+                    '',
+                    'Please reply to this email if you have any questions or ',
+                    'concerns.',
+                    '',
+                    'Thanks, ',
+                    'Nectar Research Cloud Team',
+                ]
+            )
 
             if not parsed_args.no_dry_run:
                 print('Would create ticket with details:')
@@ -151,8 +158,9 @@ class LockInstance(SecurityCommand):
 
                 print('Would add instance details to ticket:')
                 print(compute.show_instance(clients, instance.id))
-                print(network.show_instance_security_groups(
-                    clients, instance.id))
+                print(
+                    network.show_instance_security_groups(clients, instance.id)
+                )
             else:
                 print('Creating new Freshdesk ticket')
                 ticket = fd.tickets.create_outbound_email(
@@ -165,7 +173,8 @@ class LockInstance(SecurityCommand):
                     group_id=CONF.freshdesk.group_id,
                     priority=4,
                     status=2,
-                    tags=['security'])
+                    tags=['security'],
+                )
                 ticket_id = ticket.id
 
                 # Use friendly domain name if using prod
@@ -174,19 +183,20 @@ class LockInstance(SecurityCommand):
                 else:
                     domain = fd.domain
 
-                ticket_url = \
-                    f'https://{domain}/helpdesk/tickets/{ticket_id}'
-                clients.compute.servers.set_meta(instance.id,
-                                                 {'security_ticket':
-                                                  ticket_url})
+                ticket_url = f'https://{domain}/helpdesk/tickets/{ticket_id}'
+                clients.compute.servers.set_meta(
+                    instance.id, {'security_ticket': ticket_url}
+                )
                 print(f'Ticket #{ticket_id} has been created: {ticket_url}')
 
                 # Add a private note with instance details
                 print('Adding instance information to ticket')
                 instance_info = compute.show_instance(
-                    clients, instance.id, style='html')
+                    clients, instance.id, style='html'
+                )
                 sg_info = network.show_instance_security_groups(
-                    clients, instance.id, style='html')
+                    clients, instance.id, style='html'
+                )
                 body = '<br/><br/>'.join([instance_info, sg_info])
                 fd.comments.create_note(ticket_id, body)
 
@@ -236,8 +246,10 @@ class UnlockInstance(SecurityCommand):
 
                 # Add reply to user
                 print('Replying to ticket with action details')
-                action = f'Instance <b>{instance.name} ({instance.id})</b>' \
+                action = (
+                    f'Instance <b>{instance.name} ({instance.id})</b>'
                     ' has been <b>unpaused and unlocked</b>'
+                )
                 fd.comments.create_reply(ticket_id, action)
 
                 # Set ticket status=resolved
@@ -290,8 +302,10 @@ class DeleteInstance(SecurityCommand):
 
                 # Add reply to user
                 print('Updating ticket with action')
-                action = f'Instance <b>{instance.name} ({instance.id})</b>' \
-                      ' has been <b>deleted.</b>'
+                action = (
+                    f'Instance <b>{instance.name} ({instance.id})</b>'
+                    ' has been <b>deleted.</b>'
+                )
                 fd.comments.create_reply(ticket_id, action)
 
                 # Set ticket status=resolved

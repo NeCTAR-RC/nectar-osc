@@ -17,8 +17,9 @@ def get_tenant_managers_emails(identity, instance):
     email_addresses = []
     project = identity.projects.get(instance.tenant_id)
     role = identity.roles.find(name='TenantManager')
-    ras = identity.role_assignments.list(project=project,
-                                         role=role, include_names=True)
+    ras = identity.role_assignments.list(
+        project=project, role=role, include_names=True
+    )
     for ra in ras:
         u = identity.users.get(ra.user['id'])
         email_addresses.append(u.email)

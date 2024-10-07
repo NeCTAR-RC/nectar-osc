@@ -27,10 +27,8 @@ class ShowCommand(command.Command):
     def get_parser(self, prog_name):
         parser = super().get_parser(prog_name)
         parser.add_argument(
-            'id',
-            metavar='<server>',
-            help=('Server (name or ID)')
-            )
+            'id', metavar='<server>', help=('Server (name or ID)')
+        )
 
         return parser
 
@@ -47,7 +45,7 @@ class ShowInstance(ShowCommand):
         try:
             instance = clients.compute.servers.get(parsed_args.id)
         except n_exc.NotFound:
-            print('Server {} not found'.format(parsed_args.id))
+            print(f'Server {parsed_args.id} not found')
             sys.exit(1)
 
         print(compute.show_instance(clients, instance.id))
@@ -65,8 +63,7 @@ class ShowSecuritygroups(ShowCommand):
         try:
             instance = clients.compute.servers.get(parsed_args.id)
         except n_exc.NotFound:
-            print('Server {} not found'.format(parsed_args.id))
+            print(f'Server {parsed_args.id} not found')
             sys.exit(1)
 
-        print(network.show_instance_security_groups(
-                    clients, instance.id))
+        print(network.show_instance_security_groups(clients, instance.id))
