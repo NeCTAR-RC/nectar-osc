@@ -32,11 +32,6 @@ freshdesk_opts = [
 ]
 
 mailout_opts = [
-    cfg.IntOpt(
-        'page_size',
-        default='-1',
-        help='nova result page size when listing instances',
-    ),
     cfg.StrOpt(
         'work_dir',
         default='~/.cache/os-mailout/freshdesk/',
@@ -44,15 +39,25 @@ mailout_opts = [
     ),
 ]
 
+nova_opts = [
+    cfg.IntOpt(
+        'page_size',
+        default='-1',
+        help='nova result page size when listing instances',
+    ),
+]
+
 
 cfg.CONF.register_opts(freshdesk_opts, group='freshdesk')
 cfg.CONF.register_opts(mailout_opts, group='mailout')
+cfg.CONF.register_opts(nova_opts, group='nova')
 
 
 def list_opts():
     return [
         ('freshdesk', freshdesk_opts),
         ('mailout', mailout_opts),
+        ('nova', nova_opts),
     ]
 
 

@@ -1,2 +1,4 @@
 coverage
 stestr
+python-novaclient
+nectarclient-lib
