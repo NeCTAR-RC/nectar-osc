@@ -123,8 +123,7 @@ class MailoutPrepCommand(command.Command):
             '--record-metadata',
             action='store_true',
             help=(
-                'Record the freshdesk ticket URL in '
-                'the nova instance metadata'
+                'Record the freshdesk ticket URL in the nova instance metadata'
             ),
         )
         parser.add_argument(
