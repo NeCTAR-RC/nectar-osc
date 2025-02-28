@@ -390,6 +390,7 @@ class TestMailout(unittest.TestCase):
                 )
                 self.assertEqual(
                     {
+                        'affected': 2,
                         'days': 0,
                         'hours': 1,
                         'start_ts': datetime.datetime(2015, 6, 25, 9, 0),

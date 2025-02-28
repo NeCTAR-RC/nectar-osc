@@ -293,6 +293,7 @@ class Instances(MailoutPrepCommand):
                 'project_name': project_name,
             }
             context.update(project_data.items())
+            context['affected'] = len(project_data.get('instances', []))
             self.generate_notification(
                 project_name, project_data['recipients'], context
             )
@@ -483,7 +484,6 @@ class Send(command.Command):
         self.resume = args.resume
         self.confirm = args.confirm
         self.send_to = args.send_to
-        self.limit = args.limit
 
     def take_action(self, args):
         self.check_args(args)
