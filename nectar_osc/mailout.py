@@ -41,8 +41,6 @@ from nectar_osc.util import query_yes_no
 
 CONF = cfg.CONF
 
-DEFAULT_WORK_DIR = '~/.cache/os-mailout/freshdesk/'
-
 
 class MailoutPrepCommand(command.Command):
     """mailout top class"""
@@ -62,7 +60,7 @@ class MailoutPrepCommand(command.Command):
         # to specify (and reuse) the mailout directory.
         parser.add_argument(
             '--work-dir',
-            default=os.path.expanduser(DEFAULT_WORK_DIR),
+            default=os.path.expanduser(CONF.mailout.work_dir),
             help='Working directory for the mailout',
         )
         parser.add_argument(
@@ -420,7 +418,7 @@ class Cleanup(command.Command):
         )
         parser.add_argument(
             '--work-dir',
-            default=os.path.expanduser(DEFAULT_WORK_DIR),
+            default=os.path.expanduser(CONF.mailout.work_dir),
             help='Work directory for mailouts',
         )
         parser.add_argument(

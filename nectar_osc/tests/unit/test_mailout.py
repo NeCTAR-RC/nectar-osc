@@ -17,7 +17,6 @@ import os
 import shutil
 import sys
 import tempfile
-import unittest
 from unittest.mock import ANY
 from unittest.mock import call
 from unittest.mock import Mock
@@ -28,6 +27,7 @@ from keystoneclient.exceptions import NotFound
 from nectarclient_lib.exceptions import BadRequest
 
 from nectar_osc import mailout
+from nectar_osc.tests import test
 from nectar_osc.tests.unit import fakes
 
 
@@ -96,7 +96,7 @@ instances: {{ instances }}
 """
 
 
-class TestMailout(unittest.TestCase):
+class TestMailout(test.TestCase):
     def test_get_parser(self):
         mock_app = Mock()
         mock_app_args = Mock()
