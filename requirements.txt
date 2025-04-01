@@ -3,7 +3,8 @@ oslo.utils
 osc-lib
 keystoneauth1
 python-freshdesk
-python-openstackclient
+openstacksdk>=4.4.0
+python-openstackclient>=7.4.0
 python-neutronclient
 python-keystoneclient
 python-novaclient

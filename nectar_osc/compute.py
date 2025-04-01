@@ -12,10 +12,8 @@
 #
 
 import json
-import six
-import sys
 
-from novaclient import exceptions as n_exc
+from openstackclient.compute.v2 import server as osc_server
 from prettytable import PrettyTable
 
 
@@ -29,7 +27,7 @@ def _format_instance(d, style=None):
             v = json.dumps(v)
         # if value has a newline, add in multiple rows
         # e.g. fault with stacktrace
-        if v and isinstance(v, six.string_types) and (r'\n' in v or '\r' in v):
+        if v and isinstance(v, str) and (r'\n' in v or '\r' in v):
             # '\r' would break the table, so remove it.
             if '\r' in v:
                 v = v.replace('\r', '')
@@ -47,7 +45,7 @@ def _format_instance(d, style=None):
         output = '<b>Instance details</b>'
         output += pt.get_html_string(
             attributes={
-                'border': 1,
+                'border': '1',
                 'style': 'border-width: 1px; border-collapse: collapse;',
             }
         )
@@ -58,64 +56,9 @@ def _format_instance(d, style=None):
 
 
 def show_instance(clients, instance_id, style=None):
-    try:
-        instance = clients.compute.servers.get(instance_id)
-    except n_exc.NotFound:
-        print(f"Instance {instance_id} not found")
-        sys.exit(1)
+    instance = clients.compute.get_server(instance_id)
+    data = osc_server._prep_server_detail(
+        clients.compute, clients.image, instance, refresh=False
+    )
 
-    info = instance._info.copy()
-    for network_label, address_list in instance.networks.items():
-        info[f'{network_label} network'] = ', '.join(address_list)
-
-    flavor = info.get('flavor', {})
-    flavor_id = flavor.get('id', '')
-
-    try:
-        info['flavor'] = (
-            f'{clients.compute.flavors.get(flavor_id).name} ({flavor_id})'
-        )
-    except Exception:
-        info['flavor'] = '{} ({})'.format("Flavor not found", flavor_id)
-
-    # Image
-    image = info.get('image', {})
-    if image:
-        image_id = image.get('id', '')
-        try:
-            img = clients.image.images.get(image_id)
-            nectar_build = img.get('nectar_build', 'N/A')
-            info['image'] = (
-                f'{img.name} ({img.id}, NeCTAR Build {nectar_build})'
-            )
-        except Exception:
-            info['image'] = f'Image not found ({image_id})'
-
-    else:  # Booted from volume
-        info['image'] = "Attempt to boot from volume - no image supplied"
-
-    # Tenant
-    project_id = info.get('tenant_id')
-    if project_id:
-        try:
-            project = clients.identity.projects.get(project_id)
-            info['tenant_id'] = f'{project.name} ({project.id})'
-        except Exception:
-            pass
-
-    # User
-    user_id = info.get('user_id')
-    if user_id:
-        try:
-            user = clients.identity.users.get(user_id)
-            info['user_id'] = f'{user.name} ({user.id})'
-        except Exception:
-            pass
-
-    # Remove stuff
-    info.pop('links', None)
-    info.pop('addresses', None)
-    info.pop('hostId', None)
-    info.pop('security_groups', None)
-
-    return _format_instance(info, style=style)
+    return _format_instance(data, style=style)

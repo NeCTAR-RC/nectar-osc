@@ -104,7 +104,7 @@ def _format_secgroups(security_groups, style=None):
         output = '<b>Security Groups</b>'
         output += pt.get_html_string(
             attributes={
-                'border': 1,
+                'border': '1',
                 'style': 'border-width: 1px; border-collapse: collapse;',
             }
         )

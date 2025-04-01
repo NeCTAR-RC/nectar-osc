@@ -14,7 +14,6 @@
 import logging
 import sys
 
-from novaclient import exceptions as n_exc
 from osc_lib.command import command
 from oslo_config import cfg
 
@@ -65,11 +64,7 @@ class LockInstance(SecurityCommand):
         if not parsed_args.no_dry_run:
             print('Running in dry-run mode (use --no-dry-run to action)')
 
-        try:
-            instance = clients.compute.servers.get(parsed_args.id)
-        except n_exc.NotFound:
-            print(f'Instance {parsed_args.id} not found')
-            sys.exit(1)
+        instance = clients.compute.get_server(parsed_args.id)
 
         # Pause and lock instance
         if not parsed_args.no_dry_run:
@@ -85,10 +80,10 @@ class LockInstance(SecurityCommand):
                 )
             else:
                 print(f'Pausing instance {instance.id}')
-                instance.pause()
+                clients.compute.pause_server(instance)
 
             print(f'Locking instance {instance.id}')
-            instance.lock()
+            clients.compute.lock_server(instance)
 
         # Process ticket
         ticket_id = None
@@ -111,7 +106,7 @@ class LockInstance(SecurityCommand):
                 print(f'Setting ticket #{ticket_id} status to open/urgent')
                 fd.tickets.update_ticket(ticket_id, status=6, priority=4)
         else:
-            project = clients.identity.projects.get(instance.tenant_id)
+            project = clients.identity.projects.get(instance.project_id)
             user = clients.identity.users.get(instance.user_id)
             email = user.email or 'no-reply@nectar.org.au'
             name = getattr(user, 'full_name', email)
@@ -184,8 +179,8 @@ class LockInstance(SecurityCommand):
                     domain = fd.domain
 
                 ticket_url = f'https://{domain}/helpdesk/tickets/{ticket_id}'
-                clients.compute.servers.set_meta(
-                    instance.id, {'security_ticket': ticket_url}
+                clients.compute.set_server_metadata(
+                    instance.id, security_ticket=ticket_url
                 )
                 print(f'Ticket #{ticket_id} has been created: {ticket_url}')
 
@@ -216,11 +211,7 @@ class UnlockInstance(SecurityCommand):
         if not parsed_args.no_dry_run:
             print('Running in dry-run mode (use --no-dry-run to action)')
 
-        try:
-            instance = clients.compute.servers.get(parsed_args.id)
-        except n_exc.NotFound:
-            print(f'Instance {parsed_args.id} not found')
-            sys.exit(1)
+        instance = clients.compute.get_server(parsed_args.id)
 
         ticket_id = None
         ticket_url = instance.metadata.get('security_ticket')
@@ -239,10 +230,10 @@ class UnlockInstance(SecurityCommand):
                 print('Would resolve ticket')
             else:
                 print(f'Unpausing instance {instance.id}')
-                instance.unpause()
+                clients.compute.unpause_server(instance)
 
                 print(f'Unlocking instance {instance.id}')
-                instance.unlock()
+                clients.compute.unlock_server(instance)
 
                 # Add reply to user
                 print('Replying to ticket with action details')
@@ -274,11 +265,7 @@ class DeleteInstance(SecurityCommand):
         if not parsed_args.no_dry_run:
             print('Running in dry-run mode (use --no-dry-run to action)')
 
-        try:
-            instance = clients.compute.servers.get(parsed_args.id)
-        except n_exc.NotFound:
-            print(f'Instance {parsed_args.id} not found')
-            sys.exit(1)
+        instance = clients.compute.get_server(parsed_args.id)
 
         ticket_id = None
         ticket_url = instance.metadata.get('security_ticket')
@@ -298,7 +285,7 @@ class DeleteInstance(SecurityCommand):
                 print('Would resolve ticket')
             else:
                 print(f'Deleting instance {instance.id})')
-                instance.delete()
+                clients.compute.delete_server(instance)
 
                 # Add reply to user
                 print('Updating ticket with action')

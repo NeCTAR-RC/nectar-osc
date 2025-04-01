@@ -15,7 +15,7 @@
 def get_tenant_managers_emails(identity, instance):
     """Build a list of email addresses"""
     email_addresses = []
-    project = identity.projects.get(instance.tenant_id)
+    project = identity.projects.get(instance.project_id)
     role = identity.roles.find(name='TenantManager')
     ras = identity.role_assignments.list(
         project=project, role=role, include_names=True

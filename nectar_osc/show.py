@@ -12,9 +12,7 @@
 #
 
 import logging
-import sys
 
-from novaclient import exceptions as n_exc
 from osc_lib.command import command
 
 from nectar_osc import compute
@@ -42,12 +40,7 @@ class ShowInstance(ShowCommand):
         self.log.debug('take_action(%s)', parsed_args)
         clients = self.app.client_manager
 
-        try:
-            instance = clients.compute.servers.get(parsed_args.id)
-        except n_exc.NotFound:
-            print(f'Server {parsed_args.id} not found')
-            sys.exit(1)
-
+        instance = clients.compute.get_server(parsed_args.id)
         print(compute.show_instance(clients, instance.id))
 
 
@@ -60,10 +53,6 @@ class ShowSecuritygroups(ShowCommand):
         self.log.debug('take_action(%s)', parsed_args)
         clients = self.app.client_manager
 
-        try:
-            instance = clients.compute.servers.get(parsed_args.id)
-        except n_exc.NotFound:
-            print(f'Server {parsed_args.id} not found')
-            sys.exit(1)
+        instance = clients.compute.get_server(parsed_args.id)
 
         print(network.show_instance_security_groups(clients, instance.id))
