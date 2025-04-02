@@ -40,7 +40,7 @@ class ListFlavors(command.Lister):
         flavor_kwargs = {}
         if parsed_args.all:
             flavor_kwargs['is_public'] = None
-        flavors = compute_client.flavors.list(**flavor_kwargs)
+        flavors = compute_client.flavors(**flavor_kwargs)
         groups = rating_client.rating.hashmap.get_group()['groups']
         group_id = None
         for g in groups:
@@ -51,10 +51,12 @@ class ListFlavors(command.Lister):
             group_id=group_id
         )['mappings']
         mappings = {m.get('value'): m.get('cost') for m in mappings}
+        data = []
         for f in flavors:
             f.rate = mappings.get(f.id)
+            data.append(f)
         columns = ['id', 'name', 'rate']
         return (
             columns,
-            (osc_utils.get_item_properties(f, columns) for f in flavors),
+            (osc_utils.get_item_properties(f, columns) for f in data),
         )
