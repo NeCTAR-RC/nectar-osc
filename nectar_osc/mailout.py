@@ -19,11 +19,9 @@ import shutil
 import sys
 import tempfile
 import yaml
-import zoneinfo
 
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
-from jinja2 import StrictUndefined
 from jinja2 import Template
 
 from osc_lib.command import command
@@ -103,18 +101,18 @@ class MailoutPrepCommand(command.Command):
             help='Only consider instances in this project',
         )
         parser.add_argument('--subject', help='Custom email subject')
-        parser.add_argument(
-            '--start-time', help='Outage start time (optional)'
-        )
-        parser.add_argument(
-            '--duration', help='Duration of outage in hours (optional)'
-        )
+        # TODO(SC) - there are use-cases where the '--start-time' and / or
+        # '--duration' don't make sense.  These should be optional.
+        parser.add_argument('--start-time', help='Outage start time')
+        parser.add_argument('--duration', help='Duration of outage in hours')
+        # TODO(SC) - timezone handling is broken.  Currently, the
+        # '--start-time' is parsed and subsequently rendered using the host's
+        # local timezone.  The '--timezone' option is simply passed in
+        # the template context and treated as a text field.
         parser.add_argument(
             '--timezone',
-            help=(
-                'Timezone for outage start and end in IANA format; e.g. '
-                '"Australia/Melbourne".  If omitted, the local timezone is used'
-            ),
+            default="AEDT",
+            help='Timezone for outage start and end',
         )
         parser.add_argument(
             '--instances-file', help='Only consider instances listed in file'
@@ -138,52 +136,35 @@ class MailoutPrepCommand(command.Command):
         return parser
 
     def check_args(self, args):
-        if args.timezone:
-            try:
-                self.timezone = zoneinfo.ZoneInfo(args.timezone)
-            except zoneinfo.ZoneInfoNotFoundError:
-                raise Exception(f"Unrecognized timezone '{args.timezone}'")
-        else:
-            self.timezone = None
+        if not args.start_time:
+            raise Exception(
+                "No --start-time=START_TIME: Please specify an outage "
+                "start time; e.g. '09:00 25-06-2015'"
+            )
+        try:
+            self.start_ts = datetime.strptime(
+                args.start_time, '%H:%M %d-%m-%Y'
+            )
+        except ValueError:
+            raise Exception(
+                "Invalid --start-time: the expected date-time format is "
+                "'%H:%M %d-%m-%Y'; e.g. '09:00 25-06-2015')"
+            )
 
-        if args.start_time:
-            try:
-                self.start_ts = datetime.strptime(
-                    args.start_time, '%H:%M %d-%m-%Y'
-                ).astimezone(self.timezone)
-            except ValueError:
-                raise Exception(
-                    "Invalid --start-time: the expected date-time format is "
-                    "'%H:%M %d-%m-%Y'; e.g. '09:00 25-06-2015')"
-                )
-        else:
-            self.start_ts = None
-
-        if args.duration:
-            if not self.start_ts:
-                raise Exception(
-                    "--duration can only be used with --start-time"
-                )
-            try:
-                duration = int(args.duration)
-                if duration < 0:
-                    raise Exception("Invalid --duration: cannot be negative")
-                self.end_ts = self.start_ts + timedelta(hours=duration)
-            except ValueError:
-                raise Exception("Invalid --duration: an integer is required")
-        else:
-            self.end_ts = None
-
-        if args.timezone:
-            self.tzname = args.timezone
-        elif self.start_ts:
-            self.tzname = self.start_ts.tzinfo.tzname(self.start_ts)
-        else:
-            self.tzname = None
+        if not args.duration:
+            raise Exception(
+                "No --duration=DURATION: Please specify outage duration "
+                "in hours."
+            )
+        try:
+            duration = int(args.duration)
+            if duration < 0:
+                raise Exception("Invalid --duration: cannot be negative")
+            self.end_ts = self.start_ts + timedelta(hours=duration)
+        except ValueError:
+            raise Exception("Invalid --duration: an integer is required")
 
         if args.limit:
-            if args.instances_file:
-                raise Exception("--limit cannot be used with --instances-file")
             try:
                 self.limit = int(args.limit or '0')
                 if self.limit <= 0:
@@ -216,6 +197,7 @@ class MailoutPrepCommand(command.Command):
             get_project(identity, args.project) if args.project else None
         )
         self.subject = args.subject or self.default_subject
+        self.timezone = args.timezone
         self.instances_file = args.instances_file
         self.record_metadata = args.record_metadata
         self.metadata_field = args.metadata_field
@@ -285,6 +267,7 @@ class Instances(MailoutPrepCommand):
         self.log.debug('take_action(%s)', args)
         self.setup(args)
         if self.instances_file:
+            # TODO(SC) - implement --limit?
             instances = self.load_instances()
         else:
             instances = all_instances(
@@ -303,21 +286,12 @@ class Instances(MailoutPrepCommand):
         print(f"Will generate {len(self.projects)} notifications")
         for project_name, project_data in self.projects.items():
             context = {
+                'start_ts': self.start_ts,
+                'end_ts': self.end_ts,
                 'project_name': project_name,
-                'affected': len(project_data.get('instances', [])),
             }
-            if self.start_ts:
-                context['start_ts'] = self.start_ts
-            if self.end_ts:
-                context['end_ts'] = self.end_ts
-            if self.tzname:
-                context['tz'] = self.tzname
-            if self.zones:
-                context['zones'] = self.zones
-                if len(self.zones) == 1:
-                    context['zone'] = self.zones[0]
-
             context.update(project_data.items())
+            context['affected'] = len(project_data.get('instances', []))
             self.generate_notification(
                 project_name, project_data['recipients'], context
             )
@@ -623,9 +597,7 @@ class Generator:
         self.template_path, self.template_name = os.path.split(template)
         self.subject_template = Template(subject)
         self.env = Environment(
-            loader=FileSystemLoader(self.template_path),
-            trim_blocks=True,
-            undefined=StrictUndefined,
+            loader=FileSystemLoader(self.template_path), trim_blocks=True
         )
         self.template = self.env.get_template(self.template_name)
 

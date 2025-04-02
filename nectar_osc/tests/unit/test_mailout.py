@@ -109,19 +109,10 @@ class TestMailout(test.TestCase):
         mock_app = Mock()
         mock_app_args = Mock()
         FAILURE_TESTS = [
-            (['--timezone'], ArgumentError, 'expected one argument'),
-            (
-                ['--timezone', 'blort'],
-                Exception,
-                "Unrecognized timezone 'blort'",
-            ),
+            ([], Exception, 'No --start-time'),
             (['--start-time'], ArgumentError, 'expected one argument'),
             (['--start-time', 'foo'], Exception, 'expected date-time format'),
-            (
-                ['--duration', '42'],
-                Exception,
-                '--duration can only be used with --start-time',
-            ),
+            (['--start-time', '09:00 25-06-2015'], Exception, 'No --duration'),
             (
                 ['--start-time', '09:00 25-06-2015', '--duration'],
                 ArgumentError,
@@ -287,6 +278,7 @@ class TestMailout(test.TestCase):
         args = [
             '--start-time=09:00 25-06-2015',
             '--duration=1',
+            '--limit=1',
             '--template=/etc/passwd',
             '--instances-file=/etc/passwd',
             '--work-dir=/tmp',
@@ -305,7 +297,7 @@ class TestMailout(test.TestCase):
             '--project=area54',
         ]
         command.check_args(parser.parse_args(args))
-        self.assertIsNone(command.limit)
+        self.assertEqual(1, command.limit)
         self.assertEqual('/etc/passwd', command.template)
         self.assertEqual('/etc/passwd', command.instances_file)
         self.assertEqual('/tmp', command.work_dir)
@@ -317,61 +309,15 @@ class TestMailout(test.TestCase):
         )
         self.assertEqual('xxxx', command.image)
         self.assertEqual('To change', command.subject)
-        self.assertIsNone(command.timezone)
+        self.assertEqual('AEDT', command.timezone)
         self.assertTrue(command.record_metadata)
         self.assertEqual('ticket-id', command.metadata_field)
         self.assertEqual(
-            datetime.datetime(2015, 6, 25, 9, 0).astimezone(),
-            command.start_ts,
+            datetime.datetime(2015, 6, 25, 9, 0), command.start_ts
         )
-        self.assertEqual(
-            datetime.datetime(2015, 6, 25, 10, 0).astimezone(),
-            command.end_ts,
-        )
+        self.assertEqual(datetime.datetime(2015, 6, 25, 10, 0), command.end_ts)
         self.assertIsNotNone(command.user_id)
         self.assertIsNotNone(command.project_id)
-
-    def test_check_args3(self):
-        mock_app = Mock()
-        mock_app_args = Mock()
-        command = mailout.Instances(mock_app, mock_app_args)
-        parser = command.get_parser("instances")
-        command.clients = fakes.make_fake_clients()
-        args = [
-            '--start-time=09:00 25-06-2015',
-            '--duration=1',
-            '--timezone=Australia/Perth',
-            '--template=/etc/passwd',
-        ]
-        command.check_args(parser.parse_args(args))
-        self.assertIsNone(command.limit)
-        self.assertEqual('/etc/passwd', command.template)
-        self.assertIsNone(command.instances_file)
-        self.assertIsNotNone(command.work_dir)
-        self.assertEqual('ALL', command.status)
-        self.assertIsNone(command.zones)
-        self.assertIsNone(command.ips)
-        self.assertIsNone(command.nodes)
-        self.assertIsNone(command.image)
-        self.assertEqual(
-            ('Important announcement concerning your Nectar instances'),
-            command.subject,
-        )
-        self.assertEqual('Australia/Perth', command.timezone.key)
-        self.assertFalse(command.record_metadata)
-        self.assertIsNone(command.metadata_field)
-        self.assertEqual(
-            datetime.datetime(2015, 6, 25, 9, 0).astimezone(command.timezone),
-            command.start_ts,
-        )
-        self.assertEqual(command.timezone, command.start_ts.tzinfo)
-        self.assertEqual(
-            datetime.datetime(2015, 6, 25, 10, 0).astimezone(command.timezone),
-            command.end_ts,
-        )
-        self.assertEqual(command.timezone, command.end_ts.tzinfo)
-        self.assertIsNone(command.user_id)
-        self.assertIsNone(command.project_id)
 
     def _load(self, path):
         with open(path) as file:
@@ -447,13 +393,8 @@ class TestMailout(test.TestCase):
                         'affected': 2,
                         'days': 0,
                         'hours': 1,
-                        'start_ts': datetime.datetime(
-                            2015, 6, 25, 9, 0
-                        ).astimezone(),
-                        'end_ts': datetime.datetime(
-                            2015, 6, 25, 10, 0
-                        ).astimezone(),
-                        'tz': 'AEST',
+                        'start_ts': datetime.datetime(2015, 6, 25, 9, 0),
+                        'end_ts': datetime.datetime(2015, 6, 25, 10, 0),
                         'instances': [INSTANCE_1, INSTANCE_2],
                         'project_name': 'area54',
                         'recipients': [
