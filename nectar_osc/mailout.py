@@ -26,7 +26,6 @@ from jinja2 import FileSystemLoader
 from jinja2 import StrictUndefined
 from jinja2 import Template
 
-from novaclient import exceptions as n_exc
 from osc_lib.command import command
 from oslo_config import cfg
 
@@ -193,6 +192,7 @@ class MailoutPrepCommand(command.Command):
                 raise Exception("Invalid --limit: an integer is required")
         else:
             self.limit = None
+
         if not args.template:
             raise Exception("No template argument provided")
 
@@ -300,11 +300,6 @@ class Instances(MailoutPrepCommand):
             )
         self.projects = self.populate_data(instances)
 
-        print(f"Saving 'instances.list' file in {self.mailout_dir}")
-        with open(os.path.join(self.mailout_dir, 'instances.list'), 'w') as f:
-            for instance in instances:
-                f.write(f"{instance['id']}\n")
-
         print(f"Will generate {len(self.projects)} notifications")
         for project_name, project_data in self.projects.items():
             context = {
@@ -331,15 +326,10 @@ class Instances(MailoutPrepCommand):
     def load_instances(self):
         ids = self.read_ids(self.instances_file)
         servers = self.clients.compute.servers
-        res = []
-        for id in set(ids):
-            try:
-                server = servers.get(id)
-            except n_exc.NotFound:
-                print("Instance {id} not found.  Skipping it.")
-                continue
-            res.append(extract_server_info(self.clients, server=server))
-        return res
+        return [
+            extract_server_info(self.clients, server=servers.get(id))
+            for id in set(ids)
+        ]
 
     def populate_data(self, instances):
         projects = {}

@@ -400,11 +400,7 @@ class TestMailout(test.TestCase):
             command.take_action(parsed_args)
 
             self.assertTrue(command.mailout_dir)
-            notifications = [
-                f
-                for f in os.listdir(command.mailout_dir)
-                if f.startswith('notification@')
-            ]
+            notifications = [f for f in os.listdir(command.mailout_dir)]
             self.assertEqual(2, len(notifications))
 
         return command.mailout_dir
@@ -431,11 +427,7 @@ class TestMailout(test.TestCase):
                 command.take_action(parsed_args)
 
                 self.assertTrue(command.mailout_dir)
-                notifications = [
-                    f
-                    for f in os.listdir(command.mailout_dir)
-                    if f.startswith('notification@')
-                ]
+                notifications = [f for f in os.listdir(command.mailout_dir)]
                 self.assertEqual(2, len(notifications))
                 self.assertIn('notification@area54', notifications)
                 self.assertIn('notification@sanandreas', notifications)
