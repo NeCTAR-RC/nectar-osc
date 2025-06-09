@@ -367,7 +367,9 @@ class TestMailout(test.TestCase):
         self.assertIsNone(command.nodes)
         self.assertIsNone(command.image)
         self.assertEqual(
-            ('Important announcement about {{ project_name }} instances'),
+            (
+                'Important announcement about project {{ project_name }} instances'
+            ),
             command.subject,
         )
         self.assertEqual('Australia/Perth', command.timezone.key)

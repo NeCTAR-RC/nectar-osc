@@ -1,0 +1,64 @@
+<% include 'greeting.frag' %>
+<br>
+<br>
+This email is to inform you of a scheduled compute host outage to the Nectar
+Research Cloud.
+{% include 'schedule.frag' %}
+<br>
+<br>
+<h2>Description</h2>
+<br>
+A {% if days > 0 %}{{ days }} day {% elif hours > 0 %}{{ hours }} hour {% else %} short {% endif %}
+outage is required to perform essential maintenance on the cloud infrastructure
+that some of your instances or databases are hosted on.
+<br>
+<br>
+<h2>Impact</h2>
+<br>
+Affected compute and databases instances will be shut down and will be
+inaccessible during the outage.  (Note that they will <b>not</b> be destroyed.)
+In addition, management requests (e.g. 'reboot', 'resize' and 'snapshot')
+for the affected instances will not work during the outage.
+{% if affected -%}
+<br>
+<br>
+Your instances that will affected by this outage are listed below.
+{% endif -%}
+<br>
+<br>
+<h2>Actions required</h2>
+<br>
+<br>
+We will shut down all affected compute instances that are in RUNNING, SUSPENDED
+or PAUSED states when the outage commences.  After the required work has been
+completed, the instances that &gt;&gt;we&lt;&lt; shut down will started again.
+Likewise, we will shut down and start any affected database instances.
+Any loadbalancers affected by the outage should recover automatically, to
+the extent possible.
+<br>
+<br>
+We cannot undertake to shutdown or start your compute instances in any
+particular order.
+<ul>
+  <li>
+    We recommend that you complete your own backups, snapshots or
+    otherwise save copies of important data somewhere other than the affected
+    availability zones.
+  </li>
+  <li>
+    After the outage, we advise that you check that you SSH to your
+    servers, and check that your outward facing services have all recovered.
+  </li>
+  <li>
+    If you cannot SSH to an affected compute instance, or if you observe
+    database or loadbalancer issues, please contact Nectar support (as below).
+  </li>
+  <li>
+    If your compute instances need to be started in a particular sequence,
+    you may have to manually restart them yourself.  (Please check your own
+    service documentation where such issues should noted.  In general, this
+    is something we can't help you with.)
+  </li>
+</ul>
+{% include 'affected.frag' %}
+{% include 'signoff.frag' %}

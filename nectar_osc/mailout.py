@@ -268,15 +268,15 @@ class MailoutPrepCommand(command.Command):
 class Instances(MailoutPrepCommand):
     """Prepare instance mailout
 
-    Assemble (or read) list of instances, extract information, collate
-    by project, and preparte notifications for Members and TMs for
-    the project.
+    Assemble (or read) a list of instances, extract information, collate
+    by project, and prepare a notification for Members and TMs of
+    each affected project.
     """
 
     log = logging.getLogger(__name__ + '.Mailout.Instances')
 
     default_subject = (
-        "Important announcement about {{ project_name }} instances"
+        "Important announcement about project {{ project_name }} instances"
     )
 
     def get_parser(self, prog_name):
@@ -285,6 +285,7 @@ class Instances(MailoutPrepCommand):
         return parser
 
     def take_action(self, args):
+        # TODO(SC) refactor as other subcommands are implemented
         self.log.debug('take_action(%s)', args)
         self.setup(args)
         if self.instances_file:
@@ -322,8 +323,6 @@ class Instances(MailoutPrepCommand):
                 context['tz'] = self.tzname
             if self.zones:
                 context['zones'] = self.zones
-                if len(self.zones) == 1:
-                    context['zone'] = self.zones[0]
 
             context.update(project_data.items())
             self.generate_notification(
@@ -332,6 +331,7 @@ class Instances(MailoutPrepCommand):
         print(f"Generated {self.count} notifications into {self.mailout_dir}")
 
     def load_instances(self):
+        # TODO(SC) refactor as other subcommands are implemented
         ids = self.read_ids(self.instances_file)
         res = []
         for id in set(ids):
@@ -344,6 +344,7 @@ class Instances(MailoutPrepCommand):
         return res
 
     def populate_data(self, instances):
+        # TODO(SC) refactor as other subcommands are implemented
         projects = {}
         identity = self.clients.identity
         for inst in instances:

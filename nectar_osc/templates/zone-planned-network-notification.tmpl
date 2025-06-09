@@ -1,0 +1,57 @@
+{% include 'greeting.tmpl' %}
+<br>
+<br>
+This email is to inform you of a scheduled networking outage affecting the
+ARDC Nectar Research Cloud.
+{% include 'schedule.frag' %}
+<br>
+<br>
+<h2>Description</h2>
+<br>
+A {% if days > 0 %}{{ days }} day {% elif hours > 0 %}{{ hours }} hour {% else %} short {% endif %}
+outage is required to perform essential network in
+{% if zones|length == 1 -%}
+the {{ zones[0] }} availability zone.
+{% else -%}
+the following availability zones:
+{{ ", ".join(zones) -}}.
+{% endif -%}
+<br>
+<br>
+<h2>Description</h2>
+<br>
+This outage will impact on your ability to access instances and databases in the affected zone
+or zones.  It may also affect their ability to contact each other.  The instances and databases
+should recover automatically when outage is over.
+<br>
+<br>
+{% if affected -%}
+<br>
+<br>
+Your instances in the affected availability zone(s) are listed below.
+{% endif -%}
+<br>
+<br>
+<h2>Actions Required</h2>
+<br>
+<br>
+<ul>
+  <li>
+    We recommend that you perform your own backups, snapshots or otherwise save
+    copies of important data somewhere other than the affected availability zones.
+  </li>
+  <li>
+    During the outage, you should not attempt to perform management operations
+    on your instances, volumes or databases in the affected zone, using the
+    Nectar Dashboard, OpenStack CLI tools or OpenStack APIs.  Rebooting your
+    instances won't help.
+  </li>
+  <li>
+    After the outage, we advise that you connect to your instances, and check
+    that services running on them have recovered.  Also check that any
+    outward-facing services you are running are working correctly,
+    and that your loadbalancers are healthy.
+  </li>
+</ul>
+{% include 'affected.frag' %}
+{% include 'signoff.frag' %}

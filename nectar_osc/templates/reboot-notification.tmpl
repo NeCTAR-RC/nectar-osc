@@ -1,0 +1,53 @@
+<% include 'greeting.frag' %>
+<br>
+<br>
+This email is to inform you that some of your ARDC Nectar Research Cloud
+instances have been rebooted.
+<br>
+<br>
+<h2>Description</h2>
+<br>
+At {{ start_ts }} {{ tz }} an operational event occurred that made it
+necessary to restart some of your compute and database instances.
+<br>
+<br>
+<h2>Impact</h2>
+<br>
+The affected instances (listed below) may not have been shutdown cleanly,
+depending on the circumstances; e.g. if the infrastructure hosting your
+instances encountered a fatal hardware or software error.
+<br>
+<br>
+<h2>Actions required</h2>
+<br>
+<br>
+Compute instances that were previously RUNNING will have been started again.
+Instances that were PAUSED or SUSPENDED before the outage will not be started.
+<ul>
+  <li>
+    We advise that you SSH to each of the affected compute instances.  Then
+    check that any volumes are correctly mounted, and that all outward-facing
+    services are working.
+  </li>
+  <li>
+    For database instances, we suggest that you use the respective database
+    command line tool ('mysql', 'postgresql') to check that you can connect
+    to the database from the servers that normally use it.
+  </li>
+  <li>
+    If you are using load balancers, check that they are healthy and that
+    requests are actually getting through to the respective compute instances.
+  </li>
+  <li>
+    If you cannot SSH to an affected instance, or if you observe database
+    or loadbalancer issues, please contact Nectar support (as below).
+  </li>
+  <li>
+    If your compute instances need to be started in a particular sequence,
+    you may have to manually restart them yourself.  (Please check your own
+    service documentation where such issues should noted.  In general, this
+    is something we can't help you with.)
+  </li>
+</ul>
+{% include 'affected.frag' %}
+{% include 'signoff.frag' %}

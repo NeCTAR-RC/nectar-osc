@@ -1,0 +1,82 @@
+{% include 'greeting.frag' %}
+<br>
+<br>
+This email is to inform you of a scheduled availability zone outage to the
+ARDC Nectar Research Cloud.
+{% include 'schedule.frag' %}
+<br>
+<br>
+<h2>Description</h2>
+<br>
+A {% if days > 0 %}{{ days }} day {% elif hours > 0 %}{{ hours }} hour {% else %} short {% endif %}
+outage is required to perform essential maintenance on cloud infrastructure in
+{% if zones|length == 1 -%}
+the {{ zones[0] }} availability zone. (Only instances in this zone will be
+directly affected.)
+{% else -%}
+the following availability zones:
+{{ ", ".join(zones) -}}. (Only instances in these zones will be directly
+affected.)
+{% endif -%}
+<br>
+<br>
+<h2>Impact</h2>
+<br>
+Affected instances will be shut down and will be inaccessible during the
+outage.  (Note: instances will <b>not</b> be destroyed.) In addition, the
+zone(s) will be offline during the outage period and management requests
+(e.g. 'reboot', 'resize' and 'snapshot') in the zone will not work.
+<br>
+<br>
+If this outage is too distruptive, you may have the option of relocating
+instances to other availability zones prior to the outage start.  (This is
+subject to availability of capacity, and to any restrictions on the AZs that
+your project is permitted to use.)  Note that relocation will involve prior
+planning on your part, will take significant time and effort, and is not
+entirely without risk.  Please refer to the Nectar documentation on
+"Migrating Instances between Nectar Availability Zones" and related
+Nectar Tutorials.
+{% if affected -%}
+<br>
+<br>
+Your instances that will affected by this outage are listed below.
+{% endif -%}
+<br>
+<br>
+<h2>Actions Required</h2>
+<br>
+<br>
+We will shut down any affected compute instances that are in RUNNING, SUSPENDED
+or PAUSED states when the outage commences.  After the required work has been
+completed, the instances that &gt;&gt;we&lt;&lt; shut down will started again.
+Likewise, we will shut down and start any affected database instances.
+Any loadbalancers affected by the outage should recover automatically, to
+the extent possible.
+<br>
+<br>
+We cannot undertake to shutdown or start your compute instances in any
+particular order.
+<ul>
+  <li>
+    Before the outage, we recommend that you complete your own backups,
+    take compute instance snapshots or otherwise save copies of important
+    data somewhere other than the affected availability zones.
+  </li>
+  <li>
+    After the outage, we advise that you check that you can SSH to your
+    compute instances, and check that your outward facing services have
+    all recovered.
+  </li>
+  <li>
+    If you cannot SSH to an affected instance, or if you observe database
+    or loadbalancer issues, please contact Nectar support (as below).
+  </li>
+  <li>
+    If your compute instances need to be shut down or started in a particular
+    sequence, we recommend that you manually shut them down before the outage
+    and then manually start them afterwards.  (We will only start compute
+    instances that were still RUNNING at the start of the outage.)
+  </li>
+</ul>
+{% include 'affected.frag' %}
+{% include 'signoff.frag' %}
