@@ -54,7 +54,7 @@ def get_tenant_managers_emails(identity, instance):
     """Get tenant manager emails for an instance."""
 
     return get_user_emails_with_roles(
-        identity, instance.tenant_id, ['TenantManager']
+        identity, instance.project_id, ['TenantManager']
     )
 
 
