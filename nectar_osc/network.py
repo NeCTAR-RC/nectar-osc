@@ -13,8 +13,6 @@
 
 from prettytable import PrettyTable
 
-from neutronclient.v2_0 import client as nclient
-
 
 def _get_sg_remote(rule):
     if rule['remote_ip_prefix']:
@@ -97,7 +95,7 @@ def _format_secgroups(security_groups, style=None):
     pt = PrettyTable(['ID', 'Name', 'Rules'], caching=False)
     pt.align = 'l'
 
-    for sg in security_groups['security_groups']:
+    for sg in security_groups:
         pt.add_row([sg['id'], sg['name'], _format_sg_rules(sg)])
 
     if style == 'html':
@@ -115,14 +113,10 @@ def _format_secgroups(security_groups, style=None):
 
 
 def show_instance_security_groups(clients, instance_id, style=None):
-    nc = nclient.Client(session=clients.session)
-
-    ports = nc.list_ports(device_id=instance_id)
+    ports = clients.network.ports(device_id=instance_id)
     sg_ids = [
-        sg
-        for sgs in [p['security_groups'] for p in ports['ports']]
-        for sg in sgs
+        sg for sgs in [p['security_groups'] for p in ports] for sg in sgs
     ]
-    security_groups = nc.list_security_groups(id=sg_ids)
-
-    return _format_secgroups(security_groups, style=style)
+    if sg_ids:
+        security_groups = clients.network.security_groups(id=sg_ids)
+        return _format_secgroups(security_groups, style=style)
