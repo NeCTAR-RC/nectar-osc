@@ -376,12 +376,12 @@ class TestMailout(test.TestCase):
         self.assertFalse(command.record_metadata)
         self.assertIsNone(command.metadata_field)
         self.assertEqual(
-            datetime.datetime(2015, 6, 25, 9, 0).astimezone(command.timezone),
+            datetime.datetime(2015, 6, 25, 9, 0, tzinfo=command.timezone),
             command.start_ts,
         )
         self.assertEqual(command.timezone, command.start_ts.tzinfo)
         self.assertEqual(
-            datetime.datetime(2015, 6, 25, 10, 0).astimezone(command.timezone),
+            datetime.datetime(2015, 6, 25, 10, 0, tzinfo=command.timezone),
             command.end_ts,
         )
         self.assertEqual(command.timezone, command.end_ts.tzinfo)

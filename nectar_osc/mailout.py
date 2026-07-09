@@ -149,9 +149,13 @@ class MailoutPrepCommand(command.Command):
 
         if args.start_time:
             try:
-                self.start_ts = datetime.strptime(
-                    args.start_time, '%H:%M %d-%m-%Y'
-                ).astimezone(self.timezone)
+                # The start time is in the --timezone timezone if given,
+                # or the local timezone otherwise
+                start_ts = datetime.strptime(args.start_time, '%H:%M %d-%m-%Y')
+                if self.timezone:
+                    self.start_ts = start_ts.replace(tzinfo=self.timezone)
+                else:
+                    self.start_ts = start_ts.astimezone()
             except ValueError:
                 raise Exception(
                     "Invalid --start-time: the expected date-time format is "
