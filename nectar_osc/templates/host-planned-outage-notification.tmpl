@@ -22,7 +22,7 @@ for the affected instances will not work during the outage.
 {% if affected -%}
 <br>
 <br>
-Your instances that will affected by this outage are listed below.
+Your instances that will be affected by this outage are listed below.
 {% endif -%}
 <br>
 <br>
@@ -31,7 +31,7 @@ Your instances that will affected by this outage are listed below.
 <br>
 We will shut down all affected compute instances that are in RUNNING, SUSPENDED
 or PAUSED states when the outage commences.  After the required work has been
-completed, the instances that &gt;&gt;we&lt;&lt; shut down will started again.
+completed, the instances that <b>we</b> shut down will be started again.
 Likewise, we will shut down and start any affected database instances.
 Any loadbalancers affected by the outage should recover automatically, to
 the extent possible.
@@ -46,7 +46,7 @@ particular order.
     availability zones.
   </li>
   <li>
-    After the outage, we advise that you check that you SSH to your
+    After the outage, we advise that you check that you can SSH to your
     servers, and check that your outward facing services have all recovered.
   </li>
   <li>
@@ -56,7 +56,7 @@ particular order.
   <li>
     If your compute instances need to be started in a particular sequence,
     you may have to manually restart them yourself.  (Please check your own
-    service documentation where such issues should noted.  In general, this
+    service documentation where such issues should be noted.  In general, this
     is something we can't help you with.)
   </li>
 </ul>
