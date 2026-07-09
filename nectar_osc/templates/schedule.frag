@@ -1,16 +1,10 @@
 <br>
 <br>
-<table style="border: 1px solid black; border-collapse: collapse;">
-  <tr>
-    <td style="padding: 0.5em; border: 1px solid black;">Duration:</td>
-    <td style="padding: 0.5em; border: 1px solid black;">{{ days }} day{% if days > 1 %}s{% endif %} {{ hours }} hours</td>
-  </tr>
-  <tr>
-    <td style="padding: 0.5em; border: 1px solid black;">Start time:</td>
-    <td style="padding: 0.5em; border: 1px solid black;">{{ start_ts }} {{ tz }}</td>
-  </tr>
-  <tr>
-    <td style="padding: 0.5em; border: 1px solid black;">End time:</td>
-    <td style="padding: 0.5em; border: 1px solid black;">{{ end_ts }} {{ tz }}</td>
-  </tr>
-</table>
+{% macro human_time(ts) -%}
+{{ ts.strftime('%-I:%M') }}{{ ts.strftime('%p') | lower }} {{ ts.strftime('%A %-d %B %Y') }} {{ ts.strftime('%Z') }}
+{%- endmacro -%}
+<p>
+  <b>Duration:</b> {% if days %}{{ days }} day{{ 's' if days != 1 }}{% if hours %} {% endif %}{% endif %}{% if hours or not days %}{{ hours }} hour{{ 's' if hours != 1 }}{% endif %}<br>
+  <b>Start time:</b> {{ human_time(start_ts) }}<br>
+  <b>End time:</b> {{ human_time(end_ts) }}<br>
+</p>

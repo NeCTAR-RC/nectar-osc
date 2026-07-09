@@ -2,7 +2,7 @@
 <br>
 <br>
 <h2>Affected Instances</h2>
-<table>
+<table style="border: 1px solid black; border-collapse: collapse;">
   <thead>
     <tr>
       <th style="padding: 0.5em; border: 1px solid black;">ID</th>
