@@ -41,6 +41,13 @@ from nectar_osc.util import query_yes_no
 
 CONF = cfg.CONF
 
+# Notifying every user of a large project is counterproductive (and the
+# messaging backend limits recipients per message), so notifications go
+# to the TenantManagers only when a project has more than
+# MAX_TENANT_MANAGERS of them or more than MAX_RECIPIENTS users in total.
+MAX_TENANT_MANAGERS = 5
+MAX_RECIPIENTS = 20
+
 
 class MailoutPrepCommand(command.Command):
     """mailout top class"""
@@ -273,8 +280,8 @@ class Instances(MailoutPrepCommand):
     """Prepare instance mailout
 
     Assemble (or read) a list of instances, extract information, collate
-    by project, and prepare a notification for Members and TMs of
-    each affected project.
+    by project, and prepare a notification for TenantManagers and (for
+    small projects) Members of each affected project.
     """
 
     log = logging.getLogger(__name__ + '.Mailout.Instances')
@@ -356,15 +363,43 @@ class Instances(MailoutPrepCommand):
             if key in projects.keys():
                 projects[key]['instances'].append(dict(inst))
             else:
-                cclist = get_user_emails_with_roles(
-                    identity, inst['project'], ['TenantManager', 'Member']
-                )
+                cclist = self.select_recipients(identity, inst['project'], key)
                 # Exclude projects with no valid recipients; e.g. tempest
                 if cclist:
                     projects[key] = {'instances': [dict(inst)]}
                     projects[key].update({'recipients': cclist})
 
         return projects
+
+    def select_recipients(self, identity, project_id, project_name):
+        """Select the notification recipients for a project.
+
+        TenantManagers are always notified and come first in the list;
+        the first recipient becomes the ticket requester.  Members are
+        included only when the whole team is small enough to notify:
+        if a project has more than MAX_TENANT_MANAGERS managers, or
+        more than MAX_RECIPIENTS users in total, only the managers
+        are notified.  Disabled users are excluded.
+        """
+
+        managers = get_user_emails_with_roles(
+            identity, project_id, ['TenantManager'], exclude_disabled=True
+        )
+        members = get_user_emails_with_roles(
+            identity, project_id, ['Member'], exclude_disabled=True
+        )
+        members = [email for email in members if email not in managers]
+        if (
+            len(managers) > MAX_TENANT_MANAGERS
+            or len(managers) + len(members) > MAX_RECIPIENTS
+        ):
+            print(
+                f"Project {project_name}: notifying "
+                f"{min(len(managers), MAX_RECIPIENTS)} tenant managers "
+                f"only ({len(members)} members omitted)"
+            )
+            return managers[:MAX_RECIPIENTS]
+        return managers + members
 
 
 # class Volumes(MailoutPrepCommand):
