@@ -19,6 +19,13 @@ user_cache = {}
 role_cache = {}
 
 
+def clear_caches():
+    """Clear the project, user and role caches"""
+    project_cache.clear()
+    user_cache.clear()
+    role_cache.clear()
+
+
 def get_role(identity, role_name):
     """Fetch project via the cache"""
     if role_name in role_cache:
@@ -29,23 +36,51 @@ def get_role(identity, role_name):
         return role
 
 
+def get_user_emails_by_role(
+    identity, project_id, role_names, exclude_disabled=False
+):
+    """Get email addresses for users with certain roles
+    in a given project, as a dict mapping each role name to a
+    list of email addresses.
+
+    A single role-assignment query is made for the project; the
+    requested roles are selected client-side by role id.  (Matching
+    by id rather than name is important: keystone resolves role
+    names case-insensitively, so the stored name's case may differ
+    from the requested one.)  Roles assigned to groups rather than
+    users are ignored.
+    """
+    emails = {role_name: [] for role_name in role_names}
+    role_ids = {
+        get_role(identity, role_name).id: role_name for role_name in role_names
+    }
+    for ra in identity.role_assignments.list(project=project_id):
+        if not hasattr(ra, 'user'):
+            continue
+        role_name = role_ids.get(ra.role['id'])
+        if role_name is None:
+            continue
+        u = get_user(identity, ra.user['id'], use_cache=True)
+        if exclude_disabled and not u.enabled:
+            continue
+        email = getattr(u, 'email', None)
+        if email and email not in emails[role_name]:
+            emails[role_name].append(email)
+    return emails
+
+
 def get_user_emails_with_roles(
     identity, project_id, role_names, exclude_disabled=False
 ):
     """Get email addresses for users with certain roles
     in a given project."""
+    by_role = get_user_emails_by_role(
+        identity, project_id, role_names, exclude_disabled
+    )
     emails = []
     for role_name in role_names:
-        role = get_role(identity, role_name)
-        ras = identity.role_assignments.list(
-            project=project_id, role=role, include_names=True
-        )
-        for ra in ras:
-            u = get_user(identity, ra.user['id'], use_cache=False)
-            if exclude_disabled and not u.enabled:
-                continue
-            email = getattr(u, 'email', None)
-            if email and email not in emails:
+        for email in by_role[role_name]:
+            if email not in emails:
                 emails.append(email)
     return emails
 

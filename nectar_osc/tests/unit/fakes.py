@@ -77,8 +77,10 @@ class FakeRoles:
         raise keystoneauth1.exceptions.http.NotFound()
 
     def find(self, name):
+        # Name matching is case-insensitive, like real keystone (the
+        # role name column has a case-insensitive collation)
         for role in self.roles:
-            if role.id == name or role.name == name:
+            if role.id == name or role.name.lower() == name.lower():
                 return role
         raise keystoneauth1.exceptions.http.NotFound()
 
@@ -87,6 +89,9 @@ class FakeRole:
     def __init__(self, id, name):
         self.id = id
         self.name = name
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 class FakeProjects:
@@ -116,11 +121,11 @@ class FakeRoleAssignments:
     def __init__(self, assignments=[]):
         self.assignments = assignments
 
-    def list(self, project, role, include_names):
+    def list(self, project, role=None, include_names=False):
         return [
             ra
             for ra in self.assignments
-            if project == ra.project and role == ra.role
+            if project == ra.project and (role is None or role == ra.role)
         ]
 
 

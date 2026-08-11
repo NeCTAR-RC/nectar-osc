@@ -10,15 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-
 from keystoneauth1.exceptions.http import NotFound
 
 from nectar_osc import identity
+from nectar_osc.tests import test
 from nectar_osc.tests.unit import fakes
 
 
-class TestIdentity(unittest.TestCase):
+class TestIdentity(test.TestCase):
     def test_get_user(self):
         clients = fakes.make_fake_clients()
         with self.assertRaises(NotFound):
@@ -49,4 +48,49 @@ class TestIdentity(unittest.TestCase):
         )
         self.assertEqual(
             ['terry.towling@gmail.com', 'fred.nurke@gmail.com'], emails
+        )
+
+    def test_get_user_emails_by_role(self):
+        clients = fakes.make_fake_clients()
+        emails = identity.get_user_emails_by_role(
+            clients.identity,
+            project_id='44444444-1111-1111-1111-111111111111',
+            role_names=['Member', 'TenantManager'],
+        )
+        self.assertEqual(
+            {
+                'Member': [
+                    'terry.towling@gmail.com',
+                    'fred.nurke@gmail.com',
+                ],
+                'TenantManager': ['fred.nurke@gmail.com'],
+            },
+            emails,
+        )
+
+    def test_get_user_emails_by_role_case_insensitive(self):
+        """Production role names may not match the case of the
+        requested names (e.g. 'tenantmanager' vs 'TenantManager').
+        Keystone resolves role names case-insensitively and the
+        role matching must honour that.
+        """
+        roles = [
+            fakes.FakeRole(id=fakes.ROLES[0].id, name='member'),
+            fakes.FakeRole(id=fakes.ROLES[1].id, name='tenantmanager'),
+        ]
+        clients = fakes.make_fake_clients(roles=roles)
+        emails = identity.get_user_emails_by_role(
+            clients.identity,
+            project_id='44444444-1111-1111-1111-111111111111',
+            role_names=['Member', 'TenantManager'],
+        )
+        self.assertEqual(
+            {
+                'Member': [
+                    'terry.towling@gmail.com',
+                    'fred.nurke@gmail.com',
+                ],
+                'TenantManager': ['fred.nurke@gmail.com'],
+            },
+            emails,
         )

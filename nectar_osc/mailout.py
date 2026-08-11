@@ -34,7 +34,7 @@ from nectar_osc.compute import all_instances
 from nectar_osc.compute import extract_server_info
 from nectar_osc.identity import get_project
 from nectar_osc.identity import get_user
-from nectar_osc.identity import get_user_emails_with_roles
+from nectar_osc.identity import get_user_emails_by_role
 from nectar_osc.util import normalize_filename
 from nectar_osc.util import query_yes_no
 
@@ -382,13 +382,16 @@ class Instances(MailoutPrepCommand):
         are notified.  Disabled users are excluded.
         """
 
-        managers = get_user_emails_with_roles(
-            identity, project_id, ['TenantManager'], exclude_disabled=True
+        emails = get_user_emails_by_role(
+            identity,
+            project_id,
+            ['TenantManager', 'Member'],
+            exclude_disabled=True,
         )
-        members = get_user_emails_with_roles(
-            identity, project_id, ['Member'], exclude_disabled=True
-        )
-        members = [email for email in members if email not in managers]
+        managers = emails['TenantManager']
+        members = [
+            email for email in emails['Member'] if email not in managers
+        ]
         if (
             len(managers) > MAX_TENANT_MANAGERS
             or len(managers) + len(members) > MAX_RECIPIENTS
