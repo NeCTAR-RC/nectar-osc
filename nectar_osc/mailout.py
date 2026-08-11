@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import yaml
 import zoneinfo
 
@@ -299,6 +300,8 @@ class Instances(MailoutPrepCommand):
         # TODO(SC) refactor as other subcommands are implemented
         self.log.debug('take_action(%s)', args)
         self.setup(args)
+        print("Fetching instances...", flush=True)
+        phase_start = time.monotonic()
         if self.instances_file:
             instances = self.load_instances()
         else:
@@ -313,7 +316,16 @@ class Instances(MailoutPrepCommand):
                 user_id=self.user_id,
                 project_id=self.project_id,
             )
+        elapsed = time.monotonic() - phase_start
+        print(f"Collected {len(instances)} instances in {elapsed:.1f}s")
+        print("Selecting recipients...", flush=True)
+        phase_start = time.monotonic()
         self.projects = self.populate_data(instances)
+        elapsed = time.monotonic() - phase_start
+        print(
+            f"Selected recipients for {len(self.projects)} projects "
+            f"in {elapsed:.1f}s"
+        )
 
         print(f"Saving 'instances.list' file in {self.mailout_dir}")
         with open(os.path.join(self.mailout_dir, 'instances.list'), 'w') as f:

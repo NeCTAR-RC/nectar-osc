@@ -169,6 +169,7 @@ class FakeServers:
         status = search_opts.get('status', None)
         image = search_opts.get('image', None)
         compute_host = search_opts.get('compute_host', None)
+        availability_zone = search_opts.get('availability_zone', None)
         marker = search_opts.get('marker', None)
         for server in self.servers:
             if marker:
@@ -189,6 +190,11 @@ class FakeServers:
             if image and image != server.image['id']:
                 continue
             if compute_host and compute_host != server.compute_host:
+                continue
+            if (
+                availability_zone
+                and availability_zone != server['OS-EXT-AZ:availability_zone']
+            ):
                 continue
 
             res.append(server)
