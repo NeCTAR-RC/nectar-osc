@@ -28,18 +28,34 @@ class FakeClients:
 
 
 class FakeIdentity:
-    def __init__(self, users=[], projects=[], roles=[], assignments=[]):
-        self.users = FakeUsers(users)
-        self.projects = FakeProjects(projects)
+    def __init__(
+        self, users=[], projects=[], roles=[], assignments=[], list_limit=None
+    ):
+        self.users = FakeUsers(users, list_limit)
+        self.projects = FakeProjects(projects, list_limit)
         self.roles = FakeRoles(roles)
         self.role_assignments = FakeRoleAssignments(assignments)
         for obj in assignments:
             setattr(obj, 'identity', self)
 
 
+def _paginate(items, marker, list_limit):
+    """Marker pagination for fake list() methods, like keystone's"""
+    if marker is not None:
+        ids = [item.id for item in items]
+        items = items[ids.index(marker) + 1 :] if marker in ids else []
+    if list_limit:
+        items = items[:list_limit]
+    return list(items)
+
+
 class FakeUsers:
-    def __init__(self, users=[]):
+    def __init__(self, users=[], list_limit=None):
         self.users = users
+        self.list_limit = list_limit
+
+    def list(self, marker=None):
+        return _paginate(self.users, marker, self.list_limit)
 
     def get(self, id):
         for user in self.users:
@@ -95,8 +111,12 @@ class FakeRole:
 
 
 class FakeProjects:
-    def __init__(self, projects=[]):
+    def __init__(self, projects=[], list_limit=None):
         self.projects = projects
+        self.list_limit = list_limit
+
+    def list(self, marker=None):
+        return _paginate(self.projects, marker, self.list_limit)
 
     def get(self, id):
         for project in self.projects:
@@ -121,11 +141,12 @@ class FakeRoleAssignments:
     def __init__(self, assignments=[]):
         self.assignments = assignments
 
-    def list(self, project, role=None, include_names=False):
+    def list(self, project=None, role=None, include_names=False):
         return [
             ra
             for ra in self.assignments
-            if project == ra.project and (role is None or role == ra.role)
+            if (project is None or project == ra.project)
+            and (role is None or role == ra.role)
         ]
 
 
@@ -140,6 +161,8 @@ class FakeRoleAssignment:
             return self.identity.roles.get(self.role_id)
         elif name == 'user':
             return self.identity.users.get(self.user_id)
+        elif name == 'scope':
+            return {'project': {'id': self.project}}
         else:
             raise AttributeError(name)
 
@@ -413,6 +436,7 @@ def make_fake_clients(
     roles=ROLES,
     assignments=ASSIGNMENTS,
     max_response=None,
+    list_limit=None,
     taynac=None,
 ):
     return FakeClients(
@@ -422,6 +446,7 @@ def make_fake_clients(
             projects=projects,
             roles=roles,
             assignments=assignments,
+            list_limit=list_limit,
         ),
         taynac=taynac,
     )

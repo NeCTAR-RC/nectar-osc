@@ -26,6 +26,7 @@ import yaml
 from keystoneclient.exceptions import NotFound
 from nectarclient_lib.exceptions import BadRequest
 
+from nectar_osc import identity
 from nectar_osc import mailout
 from nectar_osc.tests import test
 from nectar_osc.tests.unit import fakes
@@ -714,11 +715,17 @@ class TestMailout(test.TestCase):
         )
         return command
 
-    def _select_recipients(self, n_managers, n_members, disabled_emails=()):
+    def _select_recipients(
+        self, n_managers, n_members, disabled_emails=(), prefetch=False
+    ):
         project_id = '44444444-2222-2222-2222-222222222222'
         command = self._make_recipients_command(
             project_id, n_managers, n_members, disabled_emails
         )
+        if prefetch:
+            command.assignments = identity.get_role_assignments_by_project(
+                command.clients.identity, mailout.RECIPIENT_ROLES
+            )
         return command.select_recipients(
             command.clients.identity, project_id, 'testproject'
         )
@@ -763,6 +770,30 @@ class TestMailout(test.TestCase):
         self.assertEqual(
             ['manager0@example.com', 'member1@example.com'], recipients
         )
+
+    def test_select_recipients_prefetched(self):
+        """The prefetched (bulk role-assignment) path must select the
+        same recipients as the per-project query path.
+        """
+        for kwargs in [
+            dict(n_managers=2, n_members=3),
+            dict(n_managers=6, n_members=3),
+            dict(n_managers=2, n_members=30),
+            dict(n_managers=25, n_members=0),
+            dict(
+                n_managers=1,
+                n_members=2,
+                disabled_emails=('member0@example.com',),
+            ),
+        ]:
+            identity.clear_caches()
+            expected = self._select_recipients(**kwargs)
+            identity.clear_caches()
+            self.assertEqual(
+                expected,
+                self._select_recipients(prefetch=True, **kwargs),
+                f"prefetched path differs for {kwargs}",
+            )
 
     @patch('nectar_osc.mailout.query_yes_no')
     def test_send_confirm(self, mock_query_yes_no):

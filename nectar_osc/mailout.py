@@ -34,8 +34,12 @@ from oslo_config import cfg
 from nectar_osc.compute import all_instances
 from nectar_osc.compute import extract_server_info
 from nectar_osc.identity import get_project
+from nectar_osc.identity import get_role_assignments_by_project
 from nectar_osc.identity import get_user
 from nectar_osc.identity import get_user_emails_by_role
+from nectar_osc.identity import prefetch_projects
+from nectar_osc.identity import prefetch_users
+from nectar_osc.identity import resolve_user_emails
 from nectar_osc.util import normalize_filename
 from nectar_osc.util import query_yes_no
 
@@ -48,6 +52,9 @@ CONF = cfg.CONF
 # MAX_TENANT_MANAGERS of them or more than MAX_RECIPIENTS users in total.
 MAX_TENANT_MANAGERS = 5
 MAX_RECIPIENTS = 20
+
+# The roles whose holders are notified about a project
+RECIPIENT_ROLES = ['TenantManager', 'Member']
 
 
 class MailoutPrepCommand(command.Command):
@@ -291,6 +298,11 @@ class Instances(MailoutPrepCommand):
         "Important announcement about project {{ project_name }} instances"
     )
 
+    # Cloud-wide role assignments by project id, filled by the bulk
+    # prefetch.  Projects not found here fall back to a per-project
+    # role-assignment query in select_recipients().
+    assignments = {}
+
     def get_parser(self, prog_name):
         parser = super().get_parser(prog_name)
         # TODO(SC) refactor parser when other subcommands are implemented
@@ -300,6 +312,25 @@ class Instances(MailoutPrepCommand):
         # TODO(SC) refactor as other subcommands are implemented
         self.log.debug('take_action(%s)', args)
         self.setup(args)
+        if not (self.project_id or self.user_id):
+            # Bulk-fetching users, projects and role assignments up
+            # front replaces thousands of per-object queries on a
+            # large mailout.  For mailouts narrowed to one project
+            # or user it would cost more than it saves.
+            identity = self.clients.identity
+            print("Prefetching users, projects and roles...", flush=True)
+            phase_start = time.monotonic()
+            nos_users = prefetch_users(identity)
+            nos_projects = prefetch_projects(identity)
+            self.assignments = get_role_assignments_by_project(
+                identity, RECIPIENT_ROLES
+            )
+            elapsed = time.monotonic() - phase_start
+            print(
+                f"Prefetched {nos_users} users, {nos_projects} projects "
+                f"and the role assignments of {len(self.assignments)} "
+                f"projects in {elapsed:.1f}s"
+            )
         print("Fetching instances...", flush=True)
         phase_start = time.monotonic()
         if self.instances_file:
@@ -394,12 +425,24 @@ class Instances(MailoutPrepCommand):
         are notified.  Disabled users are excluded.
         """
 
-        emails = get_user_emails_by_role(
-            identity,
-            project_id,
-            ['TenantManager', 'Member'],
-            exclude_disabled=True,
-        )
+        user_ids_by_role = self.assignments.get(project_id)
+        if user_ids_by_role is None:
+            # Not covered by the prefetch (no prefetch, no user role
+            # assignments, or a truncated server response): query the
+            # project directly.
+            emails = get_user_emails_by_role(
+                identity,
+                project_id,
+                RECIPIENT_ROLES,
+                exclude_disabled=True,
+            )
+        else:
+            emails = resolve_user_emails(
+                identity,
+                user_ids_by_role,
+                RECIPIENT_ROLES,
+                exclude_disabled=True,
+            )
         managers = emails['TenantManager']
         members = [
             email for email in emails['Member'] if email not in managers

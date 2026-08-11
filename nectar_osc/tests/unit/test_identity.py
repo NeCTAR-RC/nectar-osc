@@ -68,6 +68,55 @@ class TestIdentity(test.TestCase):
             emails,
         )
 
+    def test_prefetch(self):
+        clients = fakes.make_fake_clients()
+        self.assertEqual(
+            len(fakes.USERS), identity.prefetch_users(clients.identity)
+        )
+        self.assertEqual(
+            len(fakes.PROJECTS), identity.prefetch_projects(clients.identity)
+        )
+        self.assertIn(
+            '33333333-1111-1111-1111-111111111111', identity.user_cache
+        )
+        self.assertIn(
+            '44444444-1111-1111-1111-111111111111', identity.project_cache
+        )
+
+    def test_prefetch_paginated(self):
+        """The prefetch must follow keystone's marker pagination when
+        the server pages the listing (keystone >= 2025.1 'Epoxy').
+        """
+        clients = fakes.make_fake_clients(list_limit=2)
+        self.assertEqual(
+            len(fakes.USERS), identity.prefetch_users(clients.identity)
+        )
+        self.assertEqual(
+            len(fakes.PROJECTS), identity.prefetch_projects(clients.identity)
+        )
+
+    def test_get_role_assignments_by_project(self):
+        clients = fakes.make_fake_clients()
+        assignments = identity.get_role_assignments_by_project(
+            clients.identity, ['TenantManager', 'Member']
+        )
+        self.assertEqual(
+            {
+                '44444444-1111-1111-1111-111111111111': {
+                    'TenantManager': ['33333333-1111-1111-1111-111111111111'],
+                    'Member': [
+                        '33333333-1111-1111-1111-111111111112',
+                        '33333333-1111-1111-1111-111111111111',
+                    ],
+                },
+                '44444444-1111-1111-1111-111111111112': {
+                    'TenantManager': ['33333333-1111-1111-1111-111111111113'],
+                    'Member': ['33333333-1111-1111-1111-111111111113'],
+                },
+            },
+            assignments,
+        )
+
     def test_get_user_emails_by_role_case_insensitive(self):
         """Production role names may not match the case of the
         requested names (e.g. 'tenantmanager' vs 'TenantManager').
