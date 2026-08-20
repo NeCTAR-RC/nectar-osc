@@ -391,11 +391,11 @@ USERS = [
 ROLES = [
     FakeRole(
         id='77777777-1111-11111-1111-111111111111',
-        name='Member',
+        name='member',
     ),
     FakeRole(
         id='77777777-1111-11111-1111-111111111112',
-        name='TenantManager',
+        name='tenantmanager',
     ),
 ]
 

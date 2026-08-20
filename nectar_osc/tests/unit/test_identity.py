@@ -34,9 +34,9 @@ class TestIdentity(test.TestCase):
 
     def test_get_roles(self):
         clients = fakes.make_fake_clients()
-        self.assertIsNotNone(identity.get_role(clients.identity, 'Member'))
+        self.assertIsNotNone(identity.get_role(clients.identity, 'member'))
         self.assertIsNotNone(
-            identity.get_role(clients.identity, 'TenantManager')
+            identity.get_role(clients.identity, 'tenantmanager')
         )
 
     def test_get_user_emails_with_roles(self):
@@ -44,7 +44,7 @@ class TestIdentity(test.TestCase):
         emails = identity.get_user_emails_with_roles(
             clients.identity,
             project_id='44444444-1111-1111-1111-111111111111',
-            role_names=['Member', 'TenantManager'],
+            role_names=['member', 'tenantmanager'],
         )
         self.assertEqual(
             ['terry.towling@gmail.com', 'fred.nurke@gmail.com'], emails
