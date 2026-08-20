@@ -15,6 +15,7 @@ import os
 import unittest
 
 from nectar_osc import config
+from nectar_osc import identity
 
 filename = os.path.realpath(
     os.path.join(os.path.dirname(__file__), 'nectar-osc.conf')
@@ -26,3 +27,4 @@ config.init(filename)
 class TestCase(unittest.TestCase):
     def setUp(self):
         super().setUp()
+        identity.clear_caches()

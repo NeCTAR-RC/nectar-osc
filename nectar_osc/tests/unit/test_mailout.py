@@ -26,6 +26,7 @@ import yaml
 from keystoneclient.exceptions import NotFound
 from nectarclient_lib.exceptions import BadRequest
 
+from nectar_osc import identity
 from nectar_osc import mailout
 from nectar_osc.tests import test
 from nectar_osc.tests.unit import fakes
@@ -671,6 +672,128 @@ class TestMailout(test.TestCase):
 
             with open(last_path) as last_file:
                 self.assertEqual('1', last_file.readline())
+
+    def _make_recipients_command(
+        self, project_id, n_managers, n_members, disabled_emails=()
+    ):
+        """Build an Instances command whose fake identity has a project
+        with the given numbers of TenantManagers and Members.  Manager
+        emails are 'managerN@example.com', member emails are
+        'memberN@example.com'.
+        """
+        member_role_id = fakes.ROLES[0].id
+        manager_role_id = fakes.ROLES[1].id
+        users = []
+        assignments = []
+        specs = [
+            ('manager', manager_role_id, n_managers),
+            ('member', member_role_id, n_members),
+        ]
+        for prefix, role_id, count in specs:
+            for i in range(count):
+                email = f'{prefix}{i}@example.com'
+                user_id = f'{prefix}-{i}'
+                users.append(
+                    fakes.FakeUser(
+                        id=user_id,
+                        name=email,
+                        email=email,
+                        full_name=f'{prefix} {i}',
+                        enabled=email not in disabled_emails,
+                    )
+                )
+                assignments.append(
+                    fakes.FakeRoleAssignment(
+                        user_id=user_id,
+                        project_id=project_id,
+                        role_id=role_id,
+                    )
+                )
+        command = mailout.Instances(Mock(), Mock())
+        command.clients = fakes.make_fake_clients(
+            users=users, assignments=assignments
+        )
+        return command
+
+    def _select_recipients(
+        self, n_managers, n_members, disabled_emails=(), prefetch=False
+    ):
+        project_id = '44444444-2222-2222-2222-222222222222'
+        command = self._make_recipients_command(
+            project_id, n_managers, n_members, disabled_emails
+        )
+        if prefetch:
+            command.assignments = identity.get_role_assignments_by_project(
+                command.clients.identity, mailout.RECIPIENT_ROLES
+            )
+        return command.select_recipients(
+            command.clients.identity, project_id, 'testproject'
+        )
+
+    def test_select_recipients_small_project(self):
+        recipients = self._select_recipients(n_managers=2, n_members=3)
+        self.assertEqual(
+            [
+                'manager0@example.com',
+                'manager1@example.com',
+                'member0@example.com',
+                'member1@example.com',
+                'member2@example.com',
+            ],
+            recipients,
+        )
+
+    def test_select_recipients_many_managers(self):
+        recipients = self._select_recipients(n_managers=6, n_members=3)
+        self.assertEqual(
+            [f'manager{i}@example.com' for i in range(6)], recipients
+        )
+
+    def test_select_recipients_large_project(self):
+        recipients = self._select_recipients(n_managers=2, n_members=30)
+        self.assertEqual(
+            ['manager0@example.com', 'manager1@example.com'], recipients
+        )
+
+    def test_select_recipients_manager_cap(self):
+        recipients = self._select_recipients(n_managers=25, n_members=0)
+        self.assertEqual(
+            [f'manager{i}@example.com' for i in range(20)], recipients
+        )
+
+    def test_select_recipients_excludes_disabled(self):
+        recipients = self._select_recipients(
+            n_managers=1,
+            n_members=2,
+            disabled_emails=('member0@example.com',),
+        )
+        self.assertEqual(
+            ['manager0@example.com', 'member1@example.com'], recipients
+        )
+
+    def test_select_recipients_prefetched(self):
+        """The prefetched (bulk role-assignment) path must select the
+        same recipients as the per-project query path.
+        """
+        for kwargs in [
+            dict(n_managers=2, n_members=3),
+            dict(n_managers=6, n_members=3),
+            dict(n_managers=2, n_members=30),
+            dict(n_managers=25, n_members=0),
+            dict(
+                n_managers=1,
+                n_members=2,
+                disabled_emails=('member0@example.com',),
+            ),
+        ]:
+            identity.clear_caches()
+            expected = self._select_recipients(**kwargs)
+            identity.clear_caches()
+            self.assertEqual(
+                expected,
+                self._select_recipients(prefetch=True, **kwargs),
+                f"prefetched path differs for {kwargs}",
+            )
 
     @patch('nectar_osc.mailout.query_yes_no')
     def test_send_confirm(self, mock_query_yes_no):

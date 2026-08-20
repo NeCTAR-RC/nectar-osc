@@ -209,6 +209,18 @@ class InstanceExtractor:
                 for host in self.hosts:
                     for server in self._host_instances(host):
                         self._final_processing(server)
+            elif self.zones:
+                # Filter by availability zone in Nova.  Note that Nova
+                # filters on the AZ requested when the instance was
+                # launched, which can differ from the AZ implied by the
+                # host's aggregate (e.g. no explicit AZ requested, or
+                # the instance was migrated across AZs).  The client-side
+                # AZ check in _final_processing still applies.
+                for zone in self.zones:
+                    opts = self.get_opts()
+                    opts['availability_zone'] = zone
+                    for server in self._instances(opts):
+                        self._final_processing(server)
             else:
                 for server in self._instances():
                     self._final_processing(server)

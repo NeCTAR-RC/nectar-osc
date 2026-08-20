@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import yaml
 import zoneinfo
 
@@ -33,13 +34,27 @@ from oslo_config import cfg
 from nectar_osc.compute import all_instances
 from nectar_osc.compute import extract_server_info
 from nectar_osc.identity import get_project
+from nectar_osc.identity import get_role_assignments_by_project
 from nectar_osc.identity import get_user
-from nectar_osc.identity import get_user_emails_with_roles
+from nectar_osc.identity import get_user_emails_by_role
+from nectar_osc.identity import prefetch_projects
+from nectar_osc.identity import prefetch_users
+from nectar_osc.identity import resolve_user_emails
 from nectar_osc.util import normalize_filename
 from nectar_osc.util import query_yes_no
 
 
 CONF = cfg.CONF
+
+# Notifying every user of a large project is counterproductive (and the
+# messaging backend limits recipients per message), so notifications go
+# to the TenantManagers only when a project has more than
+# MAX_TENANT_MANAGERS of them or more than MAX_RECIPIENTS users in total.
+MAX_TENANT_MANAGERS = 5
+MAX_RECIPIENTS = 20
+
+# The roles whose holders are notified about a project
+RECIPIENT_ROLES = ['TenantManager', 'Member']
 
 
 class MailoutPrepCommand(command.Command):
@@ -273,8 +288,8 @@ class Instances(MailoutPrepCommand):
     """Prepare instance mailout
 
     Assemble (or read) a list of instances, extract information, collate
-    by project, and prepare a notification for Members and TMs of
-    each affected project.
+    by project, and prepare a notification for TenantManagers and (for
+    small projects) Members of each affected project.
     """
 
     log = logging.getLogger(__name__ + '.Mailout.Instances')
@@ -282,6 +297,11 @@ class Instances(MailoutPrepCommand):
     default_subject = (
         "Important announcement about project {{ project_name }} instances"
     )
+
+    # Cloud-wide role assignments by project id, filled by the bulk
+    # prefetch.  Projects not found here fall back to a per-project
+    # role-assignment query in select_recipients().
+    assignments = {}
 
     def get_parser(self, prog_name):
         parser = super().get_parser(prog_name)
@@ -292,6 +312,27 @@ class Instances(MailoutPrepCommand):
         # TODO(SC) refactor as other subcommands are implemented
         self.log.debug('take_action(%s)', args)
         self.setup(args)
+        if not (self.project_id or self.user_id):
+            # Bulk-fetching users, projects and role assignments up
+            # front replaces thousands of per-object queries on a
+            # large mailout.  For mailouts narrowed to one project
+            # or user it would cost more than it saves.
+            identity = self.clients.identity
+            print("Prefetching users, projects and roles...", flush=True)
+            phase_start = time.monotonic()
+            nos_users = prefetch_users(identity)
+            nos_projects = prefetch_projects(identity)
+            self.assignments = get_role_assignments_by_project(
+                identity, RECIPIENT_ROLES
+            )
+            elapsed = time.monotonic() - phase_start
+            print(
+                f"Prefetched {nos_users} users, {nos_projects} projects "
+                f"and the role assignments of {len(self.assignments)} "
+                f"projects in {elapsed:.1f}s"
+            )
+        print("Fetching instances...", flush=True)
+        phase_start = time.monotonic()
         if self.instances_file:
             instances = self.load_instances()
         else:
@@ -306,7 +347,16 @@ class Instances(MailoutPrepCommand):
                 user_id=self.user_id,
                 project_id=self.project_id,
             )
+        elapsed = time.monotonic() - phase_start
+        print(f"Collected {len(instances)} instances in {elapsed:.1f}s")
+        print("Selecting recipients...", flush=True)
+        phase_start = time.monotonic()
         self.projects = self.populate_data(instances)
+        elapsed = time.monotonic() - phase_start
+        print(
+            f"Selected recipients for {len(self.projects)} projects "
+            f"in {elapsed:.1f}s"
+        )
 
         print(f"Saving 'instances.list' file in {self.mailout_dir}")
         with open(os.path.join(self.mailout_dir, 'instances.list'), 'w') as f:
@@ -356,15 +406,58 @@ class Instances(MailoutPrepCommand):
             if key in projects.keys():
                 projects[key]['instances'].append(dict(inst))
             else:
-                cclist = get_user_emails_with_roles(
-                    identity, inst['project'], ['TenantManager', 'Member']
-                )
+                cclist = self.select_recipients(identity, inst['project'], key)
                 # Exclude projects with no valid recipients; e.g. tempest
                 if cclist:
                     projects[key] = {'instances': [dict(inst)]}
                     projects[key].update({'recipients': cclist})
 
         return projects
+
+    def select_recipients(self, identity, project_id, project_name):
+        """Select the notification recipients for a project.
+
+        TenantManagers are always notified and come first in the list;
+        the first recipient becomes the ticket requester.  Members are
+        included only when the whole team is small enough to notify:
+        if a project has more than MAX_TENANT_MANAGERS managers, or
+        more than MAX_RECIPIENTS users in total, only the managers
+        are notified.  Disabled users are excluded.
+        """
+
+        user_ids_by_role = self.assignments.get(project_id)
+        if user_ids_by_role is None:
+            # Not covered by the prefetch (no prefetch, no user role
+            # assignments, or a truncated server response): query the
+            # project directly.
+            emails = get_user_emails_by_role(
+                identity,
+                project_id,
+                RECIPIENT_ROLES,
+                exclude_disabled=True,
+            )
+        else:
+            emails = resolve_user_emails(
+                identity,
+                user_ids_by_role,
+                RECIPIENT_ROLES,
+                exclude_disabled=True,
+            )
+        managers = emails['TenantManager']
+        members = [
+            email for email in emails['Member'] if email not in managers
+        ]
+        if (
+            len(managers) > MAX_TENANT_MANAGERS
+            or len(managers) + len(members) > MAX_RECIPIENTS
+        ):
+            print(
+                f"Project {project_name}: notifying "
+                f"{min(len(managers), MAX_RECIPIENTS)} tenant managers "
+                f"only ({len(members)} members omitted)"
+            )
+            return managers[:MAX_RECIPIENTS]
+        return managers + members
 
 
 # class Volumes(MailoutPrepCommand):
