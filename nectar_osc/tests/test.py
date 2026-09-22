@@ -11,8 +11,11 @@
 #   under the License.
 #
 
+from io import StringIO
 import os
+import sys
 import unittest
+from unittest.mock import patch
 
 from nectar_osc import config
 from nectar_osc import identity
@@ -28,3 +31,17 @@ class TestCase(unittest.TestCase):
     def setUp(self):
         super().setUp()
         identity.clear_caches()
+
+    def capture_stdout(self):
+        """Redirect sys.stdout to a StringIO for the rest of the test.
+
+        Returns the StringIO; use getvalue() to inspect what was printed.
+        Calling this again in the same test returns the same StringIO.
+        """
+        if isinstance(sys.stdout, StringIO):
+            return sys.stdout
+        out = StringIO()
+        patcher = patch('sys.stdout', new=out)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return out

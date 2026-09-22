@@ -133,7 +133,7 @@ def extract_server_info(clients, server):
             server_info['email'] = user.name
             server_info['fullname'] = None
     except KeyError as e:
-        raise type(e)(f'{e.message} missing in context: {server.to_dict()}')
+        raise type(e)(f'{e.args[0]} missing in context: {server.to_dict()}')
     return server_info
 
 

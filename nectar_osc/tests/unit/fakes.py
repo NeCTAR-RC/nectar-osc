@@ -151,18 +151,38 @@ class FakeRoleAssignments:
 
 
 class FakeRoleAssignment:
-    def __init__(self, project_id, role_id, user_id):
+    """A keystone role assignment.
+
+    Like the real thing, only the attributes present in the API
+    response exist: a user assignment has no 'group' attribute and
+    vice versa, and the scope is either a project or a domain.
+    """
+
+    def __init__(
+        self,
+        project_id=None,
+        role_id=None,
+        user_id=None,
+        group_id=None,
+        domain_id=None,
+    ):
         self.project = project_id
+        self.domain = domain_id
         self.role_id = role_id
         self.user_id = user_id
+        self.group_id = group_id
 
     def __getattr__(self, name):
         if name == 'role':
             return self.identity.roles.get(self.role_id)
-        elif name == 'user':
+        elif name == 'user' and self.user_id is not None:
             return self.identity.users.get(self.user_id)
+        elif name == 'group' and self.group_id is not None:
+            return {'id': self.group_id}
         elif name == 'scope':
-            return {'project': {'id': self.project}}
+            if self.project is not None:
+                return {'project': {'id': self.project}}
+            return {'domain': {'id': self.domain}}
         else:
             raise AttributeError(name)
 
@@ -170,6 +190,9 @@ class FakeRoleAssignment:
 class FakeCompute:
     def __init__(self, servers=[], max_response=None):
         self.servers = FakeServers(servers, max_response)
+
+    def get_server(self, id):
+        return self.servers.get_server(id)
 
 
 class FakeServers:

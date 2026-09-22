@@ -14,10 +14,16 @@ from io import StringIO
 import unittest
 from unittest.mock import patch
 
+from nectar_osc import util
 from nectar_osc.util import query_yes_no
 
 
 class TestUtil(unittest.TestCase):
+    def test_get_input(self):
+        with patch('builtins.input', return_value='typed') as mock_input:
+            self.assertEqual('typed', util._get_input())
+        mock_input.assert_called_once_with()
+
     def test_query_yes_no(self):
         for answer in ['y', 'yes', 'Y', 'Yes', 'YES', '']:
             with patch('sys.stdout', new=StringIO()) as fakeOutput:
@@ -112,3 +118,23 @@ class TestUtil(unittest.TestCase):
         # Bad default
         with self.assertRaises(ValueError):
             query_yes_no("Some question", default="weeble")
+
+    def test_query_yes_no_reads_input(self):
+        """The answer really is read from stdin"""
+        with patch('sys.stdout', new=StringIO()):
+            with patch('builtins.input', return_value='n'):
+                self.assertFalse(query_yes_no("Some question"))
+
+    def test_normalize_filename(self):
+        self.assertEqual('plain', util.normalize_filename('plain'))
+        self.assertEqual('', util.normalize_filename(''))
+        self.assertEqual('a_b', util.normalize_filename('a/b'))
+        self.assertEqual('_a_b_', util.normalize_filename('/a/b/'))
+        self.assertEqual(
+            'notification@Group_Team',
+            util.normalize_filename('notification@Group/Team'),
+        )
+        # Other characters are left alone
+        self.assertEqual(
+            'a b\\c:d@e.f', util.normalize_filename('a b\\c:d@e.f')
+        )
