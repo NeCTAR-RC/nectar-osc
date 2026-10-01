@@ -23,8 +23,6 @@ from unittest.mock import Mock
 from unittest.mock import patch
 import yaml
 
-from jinja2.exceptions import TemplateNotFound
-from jinja2.exceptions import UndefinedError
 from keystoneclient.exceptions import NotFound
 from nectarclient_lib.exceptions import BadRequest
 
@@ -945,7 +943,7 @@ class TestMailout(test.TestCase):
         mock_app = Mock()
         mock_app.client_manager = fakes.make_fake_clients()
         with temp_workdir() as test_workdir:
-            with temp_template_file(TEST_TEMPLATE) as test_template_path:
+            with temp_template_file(SIMPLE_TEMPLATE) as test_template_path:
                 # The work dir is created if needed
                 work_dir = os.path.join(test_workdir, 'work', 'dir')
                 self.assertFalse(os.path.exists(work_dir))
@@ -969,6 +967,79 @@ class TestMailout(test.TestCase):
                     f"{command.mailout_dir}\n",
                     out.getvalue(),
                 )
+
+    def test_setup_checks_template(self):
+        """A template needing absent variables fails before any work"""
+        mock_app = Mock()
+        mock_app.client_manager = fakes.make_fake_clients()
+        with temp_workdir() as test_workdir:
+            with temp_template_file(TEST_TEMPLATE) as test_template_path:
+                name = os.path.basename(test_template_path)
+                command = mailout.Instances(mock_app, Mock())
+                parser = command.get_parser("instances")
+                parsed_args = parser.parse_args(
+                    [
+                        '--work-dir',
+                        test_workdir,
+                        '--template',
+                        test_template_path,
+                    ]
+                )
+                with self.assertRaises(mailout.UndefinedContextError) as cm:
+                    command.setup(parsed_args)
+                self.assertEqual(
+                    f"Template '{name}' uses context variables that this "
+                    "mailout does not provide: 'days', 'end_ts', 'hours', "
+                    "'start_ts', 'tz'",
+                    str(cm.exception),
+                )
+                # Nothing was prepared and no mailout dir was made
+                self.assertFalse(hasattr(command, 'mailout_dir'))
+
+    def test_context_keys(self):
+        command = self._check_args(['--template=/etc/passwd'])
+        self.assertEqual(
+            {'project_name', 'affected', 'instances', 'recipients'},
+            command.context_keys(),
+        )
+
+        command = self._check_args(
+            ['--template=/etc/passwd', '--zone=here', '--zone=there']
+        )
+        self.assertIn('zones', command.context_keys())
+
+        # start_ts without a duration gives no end_ts, days or hours
+        command = self._check_args(
+            ['--template=/etc/passwd', '--start-time=09:00 25-06-2015']
+        )
+        keys = command.context_keys()
+        self.assertIn('start_ts', keys)
+        self.assertIn('tz', keys)
+        self.assertNotIn('end_ts', keys)
+        self.assertNotIn('days', keys)
+
+        command = self._check_args(
+            [
+                '--template=/etc/passwd',
+                '--start-time=09:00 25-06-2015',
+                '--duration=3',
+                '--timezone=Australia/Perth',
+            ]
+        )
+        self.assertEqual(
+            {
+                'project_name',
+                'affected',
+                'instances',
+                'recipients',
+                'start_ts',
+                'end_ts',
+                'days',
+                'hours',
+                'tz',
+            },
+            command.context_keys(),
+        )
 
     def test_read_ids(self):
         with temp_template_file('id-1\nid-2\n\nid-3\n') as ids_file:
@@ -1548,6 +1619,29 @@ class TestMailout(test.TestCase):
             )
 
 
+class TestResolveTemplate(test.TestCase):
+    def test_pathname(self):
+        with temp_template_file(SIMPLE_TEMPLATE) as pathname:
+            self.assertEqual(pathname, mailout.resolve_template(pathname))
+
+    def test_bundled_name(self):
+        self.assertEqual(
+            os.path.join(mailout.TEMPLATE_DIR, 'reboot-notification.tmpl'),
+            mailout.resolve_template('reboot-notification.tmpl'),
+        )
+
+    def test_not_found(self):
+        for name in ['no.tmpl', '/foo/bar', mailout.TEMPLATE_DIR]:
+            with self.assertRaises(mailout.MissingTemplateError) as cm:
+                mailout.resolve_template(name)
+            self.assertEqual(
+                f"Template '{name}' could not be found: give a pathname, "
+                f"or the name of a template shipped in "
+                f"{mailout.TEMPLATE_DIR}",
+                str(cm.exception),
+            )
+
+
 class TestGenerator(test.TestCase):
     def test_render_subject(self):
         with temp_template_file(TEST_TEMPLATE) as template:
@@ -1612,11 +1706,72 @@ class TestGenerator(test.TestCase):
     def test_undefined_variables(self):
         """Templates must not silently render missing variables"""
         with temp_template_file('{{ missing }}') as template:
+            name = os.path.basename(template)
             generator = mailout.Generator(template, '{{ also_missing }}')
-            with self.assertRaises(UndefinedError):
+            with self.assertRaises(mailout.UndefinedContextError) as cm:
                 generator.render_template({})
-            with self.assertRaises(UndefinedError):
+            self.assertEqual(
+                f"Template '{name}' failed: 'missing' is undefined",
+                str(cm.exception),
+            )
+            with self.assertRaises(mailout.UndefinedContextError) as cm:
                 generator.render_subject({})
+            self.assertEqual(
+                f"Subject of '{name}' failed: 'also_missing' is undefined",
+                str(cm.exception),
+            )
+
+    def test_missing_context(self):
+        """The variables a template needs are found before rendering"""
+        with temp_workdir() as workdir:
+            pathname = os.path.join(workdir, 'mailout.tmpl')
+            with open(pathname, 'w') as f:
+                # 'days' comes from an include, 'fubar' from nowhere
+                f.write("{% include 'schedule.frag' %}{{ fubar }}\n")
+            generator = mailout.Generator(pathname, '{{ project_name }}')
+            self.assertEqual(
+                ['days', 'end_ts', 'fubar', 'hours', 'start_ts'],
+                generator.missing_context(['project_name', 'affected']),
+            )
+            self.assertEqual(
+                ['fubar'],
+                generator.missing_context(
+                    [
+                        'project_name',
+                        'days',
+                        'hours',
+                        'start_ts',
+                        'end_ts',
+                    ]
+                ),
+            )
+
+    def test_missing_context_subject(self):
+        with temp_template_file(SIMPLE_TEMPLATE) as template:
+            generator = mailout.Generator(template, 'Outage in {{ zone }}')
+            self.assertEqual(
+                ['zone'],
+                generator.missing_context(mailout.Instances.base_context),
+            )
+
+    def test_missing_context_shipped_templates(self):
+        """Every shipped template is satisfied by the outage options"""
+        available = set(mailout.Instances.base_context) | {
+            'start_ts',
+            'end_ts',
+            'days',
+            'hours',
+            'tz',
+            'zones',
+        }
+        for name in sorted(os.listdir(mailout.TEMPLATE_DIR)):
+            if not name.endswith('.tmpl'):
+                continue
+            generator = mailout.Generator(
+                os.path.join(mailout.TEMPLATE_DIR, name),
+                mailout.Instances.default_subject,
+            )
+            self.assertEqual([], generator.missing_context(available), name)
 
     def test_trim_blocks(self):
         with temp_template_file(
@@ -1630,8 +1785,45 @@ class TestGenerator(test.TestCase):
 
     def test_template_not_found(self):
         with temp_workdir() as workdir:
-            with self.assertRaises(TemplateNotFound):
+            with self.assertRaises(mailout.MissingTemplateError) as cm:
                 mailout.Generator(os.path.join(workdir, 'no.tmpl'), 'subject')
+            self.assertEqual(
+                f"Template file 'no.tmpl' not found in {workdir} or "
+                f"{mailout.TEMPLATE_DIR}",
+                str(cm.exception),
+            )
+
+    def test_include_not_found(self):
+        """A missing include must be explained, not just named"""
+        with temp_workdir() as workdir:
+            pathname = os.path.join(workdir, 'mailout.tmpl')
+            with open(pathname, 'w') as f:
+                f.write("{% include 'nosuch.frag' %}\n")
+            generator = mailout.Generator(pathname, 'subject')
+            with self.assertRaises(mailout.MissingTemplateError) as cm:
+                generator.render_template({})
+            self.assertEqual(
+                f"Template file 'nosuch.frag' not found in {workdir} or "
+                f"{mailout.TEMPLATE_DIR}",
+                str(cm.exception),
+            )
+
+    def test_bundled_include(self):
+        """A template elsewhere can include a shipped fragment"""
+        with temp_workdir() as workdir:
+            pathname = os.path.join(workdir, 'mailout.tmpl')
+            with open(pathname, 'w') as f:
+                f.write("{% include 'greeting.frag' %}\n")
+            generator = mailout.Generator(pathname, 'subject')
+            self.assertIn('Dear', generator.render_template({}))
+
+    def test_search_path(self):
+        """A shipped template does not search its directory twice"""
+        generator = mailout.Generator(
+            os.path.join(mailout.TEMPLATE_DIR, 'reboot-notification.tmpl'),
+            'subject',
+        )
+        self.assertEqual([mailout.TEMPLATE_DIR], generator.search_path)
 
     def test_shipped_templates(self):
         """The templates shipped with the package render with the
