@@ -3,6 +3,12 @@ Mailout template catalog
 
 Documentation for the standard templates in this directory.
 
+The ``--template`` option takes either a pathname or the name of a
+template in this directory; e.g. ``--template reboot-notification.tmpl``.
+A template of your own can be kept anywhere, and can include the
+fragments below: includes are looked up beside the template first, then
+in this directory.
+
 ``zone-outage-notification.tmpl``
    Purpose: Notify an up-coming outage for one or more AZs
 
@@ -74,6 +80,9 @@ Fragments
 
 The following standard template fragments have been created for
 common parts of a notification:
+
+``greeting.frag``
+   Purpose: to open the notification with a generic salutation
 
 ``affected.frag``
    Purpose: to include the table of affected instances

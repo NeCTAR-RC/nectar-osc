@@ -24,8 +24,11 @@ import zoneinfo
 
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
+from jinja2 import meta
 from jinja2 import StrictUndefined
 from jinja2 import Template
+from jinja2 import TemplateNotFound
+from jinja2 import UndefinedError
 
 from openstack.exceptions import NotFoundException
 from osc_lib.command import command
@@ -56,6 +59,35 @@ MAX_RECIPIENTS = 20
 # The roles whose holders are notified about a project
 RECIPIENT_ROLES = ['TenantManager', 'Member']
 
+# The templates and fragments shipped with this package
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
+
+
+class MissingTemplateError(Exception):
+    """A template, or a file it includes, could not be found"""
+
+
+class UndefinedContextError(Exception):
+    """A template uses a context variable the mailout does not provide"""
+
+
+def resolve_template(template):
+    """Return the pathname of a template.
+
+    A template is either a pathname, or the name of one of the
+    templates shipped in TEMPLATE_DIR.
+    """
+
+    if os.path.isfile(template):
+        return template
+    bundled = os.path.join(TEMPLATE_DIR, template)
+    if os.path.isfile(bundled):
+        return bundled
+    raise MissingTemplateError(
+        f"Template '{template}' could not be found: give a pathname, or "
+        f"the name of a template shipped in {TEMPLATE_DIR}"
+    )
+
 
 class MailoutPrepCommand(command.Command):
     """mailout top class"""
@@ -65,10 +97,12 @@ class MailoutPrepCommand(command.Command):
         # made config file settings?
 
         parser = super().get_parser(prog_name)
-        # TODO(SC) - Consider making the template either a pathname or
-        # a simple name that can be looked up via some search path.
         parser.add_argument(
-            '--template', help='Template pathname to use for the mailout'
+            '--template',
+            help=(
+                'Template to use for the mailout: either a pathname, or '
+                'the name of one of the templates shipped with this package'
+            ),
         )
         # TODO(SC) - Currently a mailout directory (tempfile name) is
         # generated in the work-dir.  Consider ways to allow the operator
@@ -216,15 +250,12 @@ class MailoutPrepCommand(command.Command):
         if not args.template:
             raise Exception("No template argument provided")
 
-        if not os.path.exists(args.template):
-            raise Exception("Template could not be found")
-
         if args.instances_file:
             if not os.path.exists(args.instances_file):
                 raise Exception("Instances file could not be found")
 
         self.work_dir = args.work_dir
-        self.template = args.template
+        self.template = resolve_template(args.template)
         self.zones = args.zone
         self.ips = args.ip
         self.nodes = args.node
@@ -244,11 +275,39 @@ class MailoutPrepCommand(command.Command):
         self.clients = self.app.client_manager
         self.check_args(args)
         self.generator = Generator(self.template, self.subject)
+        # Check the template before the prep phases below, which take
+        # minutes on a large mailout.  Otherwise a variable the template
+        # cannot be given is only reported at the very end.
+        self.check_template()
         if not os.path.isdir(self.work_dir):
             os.makedirs(self.work_dir)
         self.mailout_dir = tempfile.mkdtemp(dir=self.work_dir)
         print(f"Mailout will be prepared in directory {self.mailout_dir}")
         self.count = 0
+
+    def context_keys(self):
+        """The context variables that this mailout will provide"""
+
+        keys = set(self.base_context)
+        if self.start_ts:
+            keys.add('start_ts')
+        if self.end_ts:
+            # refine_context() derives these from the two timestamps
+            keys.update(['end_ts', 'days', 'hours'])
+        if self.tzname:
+            keys.add('tz')
+        if self.zones:
+            keys.add('zones')
+        return keys
+
+    def check_template(self):
+        missing = self.generator.missing_context(self.context_keys())
+        if missing:
+            names = ', '.join(f"'{name}'" for name in missing)
+            raise UndefinedContextError(
+                f"Template '{os.path.basename(self.template)}' uses context "
+                f"variables that this mailout does not provide: {names}"
+            )
 
     def read_ids(self, filename):
         "Return an id iterator for file containing a list of ids"
@@ -297,6 +356,10 @@ class Instances(MailoutPrepCommand):
     default_subject = (
         "Important announcement about project {{ project_name }} instances"
     )
+
+    # The context variables every notification gets; the rest depend on
+    # the command-line options (see context_keys())
+    base_context = ['project_name', 'affected', 'instances', 'recipients']
 
     # Cloud-wide role assignments by project id, filled by the bulk
     # prefetch.  Projects not found here fall back to a per-project
@@ -730,24 +793,96 @@ class Send(command.Command):
 
 class Generator:
     def __init__(self, template, subject):
-        self.template_path, self.template_name = os.path.split(template)
+        template_path, self.template_name = os.path.split(template)
+        self.subject = subject
         self.subject_template = Template(subject, undefined=StrictUndefined)
+        # Includes are looked up beside the template first, then among
+        # the fragments shipped with this package.  That way an operator's
+        # own template can reuse the standard fragments.
+        self.search_path = [template_path or os.curdir]
+        if os.path.realpath(self.search_path[0]) != os.path.realpath(
+            TEMPLATE_DIR
+        ):
+            self.search_path.append(TEMPLATE_DIR)
         self.env = Environment(
-            loader=FileSystemLoader(self.template_path),
+            loader=FileSystemLoader(self.search_path),
             trim_blocks=True,
             undefined=StrictUndefined,
         )
-        self.template = self.env.get_template(self.template_name)
+        try:
+            self.template = self.env.get_template(self.template_name)
+        except TemplateNotFound as exc:
+            raise self.missing_template(exc) from exc
+
+    def missing_template(self, exc):
+        # TemplateNotFound stringifies to just the missing file name,
+        # which tells the operator nothing.
+        searched = ' or '.join(self.search_path)
+        return MissingTemplateError(
+            f"Template file '{exc.name}' not found in {searched}"
+        )
+
+    def sources(self):
+        """Yield the source of the template and of everything it includes"""
+
+        pending = [self.template_name]
+        seen = set()
+        while pending:
+            name = pending.pop()
+            if name in seen:
+                continue
+            seen.add(name)
+            try:
+                source = self.env.loader.get_source(self.env, name)[0]
+            except TemplateNotFound as exc:
+                raise self.missing_template(exc) from exc
+            yield source
+            # 'None' is a computed include name, which we cannot follow
+            pending.extend(
+                included
+                for included in meta.find_referenced_templates(
+                    self.env.parse(source)
+                )
+                if included
+            )
+
+    def missing_context(self, available):
+        """Return the context variables the template needs but won't get.
+
+        Includes are followed statically, so this sees neither a computed
+        include name nor a variable used only behind an 'is defined' test.
+        """
+
+        needed = meta.find_undeclared_variables(self.env.parse(self.subject))
+        for source in self.sources():
+            needed |= meta.find_undeclared_variables(self.env.parse(source))
+        return sorted(needed - set(available))
 
     def render_template(self, context):
         self.refine_context(context)
-        return self.template.render(context).strip()
+        try:
+            return self.template.render(context).strip()
+        except TemplateNotFound as exc:
+            # Includes are resolved at render time, so a missing
+            # '.frag' file only surfaces here.
+            raise self.missing_template(exc) from exc
+        except UndefinedError as exc:
+            raise self.undefined_context(exc) from exc
 
     def render_subject(self, context):
         '''The default behavior is to perform template expansion on the
         subject parameter.'''
         self.refine_context(context)
-        return self.subject_template.render(context).strip()
+        try:
+            return self.subject_template.render(context).strip()
+        except UndefinedError as exc:
+            raise self.undefined_context(exc, 'Subject of') from exc
+
+    def undefined_context(self, exc, what='Template'):
+        # UndefinedError says what is undefined but not where
+        return UndefinedContextError(
+            f"{what} '{self.template_name}' failed: {exc.message}"
+        )
 
     def refine_context(self, context):
         if 'start_ts' in context and 'end_ts' in context:
