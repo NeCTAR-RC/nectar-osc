@@ -1836,9 +1836,7 @@ class TestGenerator(test.TestCase):
             f for f in os.listdir(template_dir) if f.endswith('.tmpl')
         )
         self.assertTrue(templates)
-        start_ts = datetime.datetime(
-            2015, 6, 25, 9, 0, tzinfo=datetime.timezone.utc
-        )
+        start_ts = datetime.datetime(2015, 6, 25, 9, 0, tzinfo=datetime.UTC)
         context = {
             'project_name': 'area54',
             'affected': 2,
