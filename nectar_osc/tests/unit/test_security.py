@@ -25,6 +25,7 @@ CONF = cfg.CONF
 
 INSTANCE_ID = '00000000-1111-1111-1111-111111111112'
 TICKET_URL = 'https://support.ehelp.edu.au/helpdesk/tickets/4242'
+OLD_TICKET_URL = 'https://support.ehelp.edu.au/helpdesk/tickets/4000'
 
 FRED = '33333333-1111-1111-1111-111111111111'
 TROVE = '33333333-1111-1111-1111-111111111114'
@@ -94,6 +95,7 @@ class SecurityTestCase(test.TestCase):
             'unlock_server',
             'delete_server',
             'set_server_metadata',
+            'delete_server_metadata',
         ]:
             getattr(compute, action).assert_not_called()
 
@@ -102,6 +104,45 @@ class SecurityTestCase(test.TestCase):
         self.fd.tickets.update_ticket.assert_not_called()
         self.fd.comments.create_reply.assert_not_called()
         self.fd.comments.create_note.assert_not_called()
+
+
+class TestResolvedTicketsValue(test.TestCase):
+    def test_no_existing(self):
+        self.assertEqual(
+            TICKET_URL, security.resolved_tickets_value(None, TICKET_URL)
+        )
+        self.assertEqual(
+            TICKET_URL, security.resolved_tickets_value('', TICKET_URL)
+        )
+
+    def test_append(self):
+        self.assertEqual(
+            f'{OLD_TICKET_URL},{TICKET_URL}',
+            security.resolved_tickets_value(OLD_TICKET_URL, TICKET_URL),
+        )
+
+    def test_duplicate_not_added(self):
+        self.assertEqual(
+            TICKET_URL, security.resolved_tickets_value(TICKET_URL, TICKET_URL)
+        )
+
+    def test_strips_whitespace(self):
+        self.assertEqual(
+            f'{OLD_TICKET_URL},{TICKET_URL}',
+            security.resolved_tickets_value(
+                f' {OLD_TICKET_URL} , ', TICKET_URL
+            ),
+        )
+
+    def test_drops_oldest_when_too_long(self):
+        base = 'https://support.ehelp.edu.au/helpdesk/tickets/'
+        existing = ','.join(f'{base}{n}' for n in range(100000, 100004))
+        value = security.resolved_tickets_value(existing, TICKET_URL)
+        self.assertLessEqual(len(value), security.METADATA_VALUE_MAX_LENGTH)
+        tickets = value.split(',')
+        self.assertEqual(TICKET_URL, tickets[-1])
+        self.assertNotIn(f'{base}100000', tickets)
+        self.assertIn(f'{base}100003', tickets)
 
 
 class TestSecurityCommand(SecurityTestCase):
@@ -152,6 +193,20 @@ class TestLockInstance(SecurityTestCase):
         self.assertIn('Would add instance details to ticket:', output)
         self.assertIn('INSTANCE DETAILS\nSECURITY GROUPS', output)
         self.mock_show_instance.assert_called_once_with(clients, INSTANCE_ID)
+        self.assertNotIn('Previously resolved tickets', output)
+
+    def test_dry_run_previously_resolved_ticket(self):
+        """A resolved ticket is reported but a new ticket is created"""
+        clients, output = self._run(
+            security.LockInstance,
+            [INSTANCE_ID],
+            make_server(metadata={'resolved_security_ticket': OLD_TICKET_URL}),
+        )
+        self.assertNoInstanceActions(clients.compute)
+        self.assertNoTicketActions()
+        self.assertIn(f'Previously resolved tickets: {OLD_TICKET_URL}', output)
+        self.assertNotIn('Found existing ticket', output)
+        self.assertIn('Would create ticket with details:', output)
         self.mock_show_sgs.assert_called_once_with(clients, INSTANCE_ID)
 
     def test_dry_run_not_active(self):
@@ -353,6 +408,10 @@ class TestUnlockInstance(SecurityTestCase):
         )
         self.assertIn('Would reply to ticket', output)
         self.assertIn('Would resolve ticket', output)
+        self.assertIn(
+            'Would move security_ticket metadata to resolved_security_ticket',
+            output,
+        )
 
     def test_dry_run_paused_without_ticket(self):
         """Without a ticket, a dry run still shows what would happen"""
@@ -398,6 +457,36 @@ class TestUnlockInstance(SecurityTestCase):
         )
         self.assertIn('Setting ticket #4242 status to resolved', output)
         self.fd.tickets.update_ticket.assert_called_once_with(4242, status=4)
+        self.assertIn(
+            'Moving security_ticket metadata to resolved_security_ticket',
+            output,
+        )
+        clients.compute.set_server_metadata.assert_called_once_with(
+            INSTANCE_ID, resolved_security_ticket=TICKET_URL
+        )
+        clients.compute.delete_server_metadata.assert_called_once_with(
+            INSTANCE_ID, ['security_ticket']
+        )
+
+    def test_unlock_keeps_earlier_resolved_tickets(self):
+        server = make_server(
+            status='PAUSED',
+            metadata={
+                'security_ticket': TICKET_URL,
+                'resolved_security_ticket': OLD_TICKET_URL,
+            },
+        )
+        clients, output = self._run(
+            security.UnlockInstance, ['--no-dry-run', INSTANCE_ID], server
+        )
+        clients.compute.unlock_server.assert_called_once_with(server)
+        clients.compute.set_server_metadata.assert_called_once_with(
+            INSTANCE_ID,
+            resolved_security_ticket=f'{OLD_TICKET_URL},{TICKET_URL}',
+        )
+        clients.compute.delete_server_metadata.assert_called_once_with(
+            INSTANCE_ID, ['security_ticket']
+        )
 
     def test_unlock_not_paused(self):
         clients, output = self._run(
