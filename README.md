@@ -12,6 +12,13 @@ openstack nectar security instance unlock
 openstack nectar security instance delete
 ```
 
+`lock` pauses and locks the instance, opens a Freshdesk ticket and records
+the ticket URL in the instance's `security_ticket` metadata. While that key
+is present other tooling (for example the expiry system when an allocation
+is renewed) will not unlock the instance. `unlock` moves the URL to the
+`resolved_security_ticket` metadata (a comma-separated history, newest
+last) so the instance is no longer treated as having an open incident.
+
 ### Enhanced commands
 Show extra info to a standard "show" command in openstack client
 ```

@@ -25,6 +25,39 @@ from nectar_osc import network
 
 CONF = cfg.CONF
 
+# Instance metadata keys. TICKET_KEY marks an instance with an open
+# security incident; other tooling (the expiry system's enable_resources)
+# treats its presence as "do not unlock". RESOLVED_TICKET_KEY keeps the
+# history of resolved tickets without carrying that meaning.
+TICKET_KEY = 'security_ticket'
+RESOLVED_TICKET_KEY = 'resolved_security_ticket'
+RESOLVED_TICKET_SEPARATOR = ','
+# Nova limits metadata values to 255 characters.
+METADATA_VALUE_MAX_LENGTH = 255
+
+
+def resolved_tickets_value(existing, ticket_url):
+    """Return the RESOLVED_TICKET_KEY value after adding ticket_url.
+
+    Tickets are kept oldest first. If the combined value would exceed
+    Nova's metadata value limit the oldest entries are dropped so the
+    newest tickets are always retained.
+    """
+    tickets = []
+    if existing:
+        tickets = [
+            t.strip()
+            for t in existing.split(RESOLVED_TICKET_SEPARATOR)
+            if t.strip()
+        ]
+    if ticket_url not in tickets:
+        tickets.append(ticket_url)
+    value = RESOLVED_TICKET_SEPARATOR.join(tickets)
+    while len(value) > METADATA_VALUE_MAX_LENGTH and len(tickets) > 1:
+        tickets.pop(0)
+        value = RESOLVED_TICKET_SEPARATOR.join(tickets)
+    return value
+
 
 class SecurityCommand(command.Command):
     """security top class"""
@@ -87,7 +120,10 @@ class LockInstance(SecurityCommand):
 
         # Process ticket
         ticket_id = None
-        ticket_url = instance.metadata.get('security_ticket')
+        resolved = instance.metadata.get(RESOLVED_TICKET_KEY)
+        if resolved:
+            print(f'Previously resolved tickets: {resolved}')
+        ticket_url = instance.metadata.get(TICKET_KEY)
         if ticket_url:
             print(f'Found existing ticket: {ticket_url}')
             ticket_id = int(ticket_url.split('/')[-1])
@@ -180,7 +216,7 @@ class LockInstance(SecurityCommand):
 
                 ticket_url = f'https://{domain}/helpdesk/tickets/{ticket_id}'
                 clients.compute.set_server_metadata(
-                    instance.id, security_ticket=ticket_url
+                    instance.id, **{TICKET_KEY: ticket_url}
                 )
                 print(f'Ticket #{ticket_id} has been created: {ticket_url}')
 
@@ -214,7 +250,7 @@ class UnlockInstance(SecurityCommand):
         instance = clients.compute.get_server(parsed_args.id)
 
         ticket_id = None
-        ticket_url = instance.metadata.get('security_ticket')
+        ticket_url = instance.metadata.get(TICKET_KEY)
         if ticket_url:
             print(f'Found ticket: {ticket_url}')
             ticket_id = int(ticket_url.split('/')[-1])
@@ -228,6 +264,10 @@ class UnlockInstance(SecurityCommand):
                 print(f'Would unpause and unlock instance {instance.id}')
                 print('Would reply to ticket')
                 print('Would resolve ticket')
+                print(
+                    f'Would move {TICKET_KEY} metadata to '
+                    f'{RESOLVED_TICKET_KEY}'
+                )
             else:
                 print(f'Unpausing instance {instance.id}')
                 clients.compute.unpause_server(instance)
@@ -246,6 +286,23 @@ class UnlockInstance(SecurityCommand):
                 # Set ticket status=resolved
                 print(f'Setting ticket #{ticket_id} status to resolved')
                 fd.tickets.update_ticket(ticket_id, status=4)
+
+                # Keep the ticket in the instance's history, but drop the
+                # TICKET_KEY so that the instance is no longer treated as
+                # having an open security incident.
+                print(f'Moving {TICKET_KEY} metadata to {RESOLVED_TICKET_KEY}')
+                clients.compute.set_server_metadata(
+                    instance.id,
+                    **{
+                        RESOLVED_TICKET_KEY: resolved_tickets_value(
+                            instance.metadata.get(RESOLVED_TICKET_KEY),
+                            ticket_url,
+                        )
+                    },
+                )
+                clients.compute.delete_server_metadata(
+                    instance.id, [TICKET_KEY]
+                )
         else:
             print(f"Instance {ticket_id} is not locked, won't unlock")
 
@@ -268,7 +325,7 @@ class DeleteInstance(SecurityCommand):
         instance = clients.compute.get_server(parsed_args.id)
 
         ticket_id = None
-        ticket_url = instance.metadata.get('security_ticket')
+        ticket_url = instance.metadata.get(TICKET_KEY)
         if ticket_url:
             print(f'Found ticket: {ticket_url}')
             ticket_id = int(ticket_url.split('/')[-1])
